@@ -4,7 +4,7 @@
 
 ## Proposta de Valor
 
-Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentários em insights acionáveis. O criador cola a URL do vídeo e obtém filtros, analytics, alertas e exportação — tudo que o YouTube Studio não oferece.
+Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentários em insights acionáveis **e em ideias de novos vídeos**. O criador cola a URL, entende o que a audiência está pedindo e gera roteiros prontos para gravar — algo que o YouTube Studio não oferece.
 
 ## Planos e Pricing
 
@@ -18,6 +18,8 @@ Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentári
 | Exportar CSV/PDF | — | Sim | Sim |
 | Nuvem de palavras | Sim | Sim | Sim |
 | Resumo AI dos comentários | — | Sim | Sim |
+| Ideias de vídeo a partir dos comentários | — | 5/mês | Ilimitadas |
+| Geração de roteiro AI | — | 5/mês | Ilimitados |
 | Detecção de spam/haters | — | Sim | Sim |
 | Múltiplos canais | — | — | Até 10 |
 | Histórico de análises | — | 30 dias | Ilimitado |
@@ -40,12 +42,30 @@ Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentári
 - **Top comentários**: ranking dos mais relevantes por engajamento
 - **Respostas do autor**: filtro para ver apenas threads onde o criador respondeu
 - **Histórico**: salva análises anteriores por 30 dias
+- **Ideias de vídeo (AI)**: agrupa perguntas e pedidos recorrentes da audiência em temas de próximos vídeos (até 5 gerações/mês)
+- **Roteiro AI**: a partir de um tema (ou de um cluster de comentários), gera um roteiro completo — título, gancho, seções, CTA e referências aos comentários que originaram a ideia (até 5 roteiros/mês)
 
 ### Business
 - **Múltiplos canais**: gerencia até 10 canais em um dashboard
 - **Comparação entre vídeos**: compare métricas de comentários entre vídeos
 - **Histórico ilimitado**
 - **Exportação em lote**
+- **Ideias e roteiros ilimitados**
+- **Calendário editorial**: fila de roteiros gerados a partir de vários vídeos do canal
+- **Variações de roteiro**: gera 2–3 ângulos diferentes para o mesmo tema (ex.: tutorial vs. lista vs. reação)
+
+### Geração de roteiros (fluxo)
+
+1. A análise agrupa comentários em **temas** (perguntas repetidas, pedidos de tutorial, objeções, nichos).
+2. O criador escolhe um tema (ex.: "Como editar thumbnails no CapCut").
+3. A AI gera um roteiro com:
+   - Título sugerido + 2 alternativas
+   - Gancho dos primeiros 15 segundos
+   - Seções com tempo estimado
+   - Pontos a cobrir, baseados nos comentários reais
+   - CTA (inscrição, próximo vídeo, comunidade)
+   - Lista dos comentários-fonte (para o criador citar ou responder no vídeo)
+4. O criador edita, copia ou exporta o roteiro.
 
 ## Arquitetura Técnica
 
@@ -59,6 +79,8 @@ Frontend (Next.js)
 API Routes
 ├── /api/comments      → YouTube Data API v3
 ├── /api/analysis      → OpenAI (resumo + sentimento)
+├── /api/ideas         → OpenAI (clusters de temas a partir dos comentários)
+├── /api/scripts       → OpenAI (geração de roteiro a partir de um tema)
 ├── /api/export        → CSV/PDF
 └── /api/webhooks/stripe
 
@@ -81,6 +103,8 @@ src/
 │   └── api/
 │       ├── comments/route.ts
 │       ├── analysis/route.ts
+│       ├── ideas/route.ts
+│       ├── scripts/route.ts
 │       ├── export/route.ts
 │       └── webhooks/stripe/route.ts
 ├── components/
@@ -99,7 +123,7 @@ src/
 
 1. **Auth**: NextAuth ou similar
 2. **Stripe**: Checkout + webhooks para planos mensais/anuais
-3. **OpenAI**: resumo AI dos comentários
+3. **OpenAI**: resumo, clustering de temas e geração de roteiros a partir dos comentários
 4. **YouTube API**: `commentThreads.list` com paginação
 5. **Banco**: Supabase/Postgres para histórico e usuários
 
@@ -111,4 +135,6 @@ src/
 - [ ] Auth
 - [ ] YouTube API real
 - [ ] Resumo AI
+- [ ] Ideias de vídeo a partir dos comentários
+- [ ] Geração de roteiro AI
 - [ ] Exportação CSV/PDF

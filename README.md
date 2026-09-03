@@ -26,7 +26,7 @@ A POC usa 40 comentários mockados de um vídeo fictício sobre crescimento no Y
 
 ## Próximos passos (SaaS completo)
 
-O plano completo com planos Free/Pro/Business, Stripe, auth, YouTube API e resumo AI está documentado em [`docs/PLAN.md`](docs/PLAN.md).
+O plano completo (Free/Pro/Business, Stripe, auth, YouTube API, resumo AI e geração de roteiros a partir dos comentários) está em [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Stack
 
