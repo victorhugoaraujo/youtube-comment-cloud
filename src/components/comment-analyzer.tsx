@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Eye, MessageSquare, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Eye, MessageSquare, Radio } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AppHeader } from "@/components/app-header";
 import { VideoInput } from "@/components/video-input";
 import { FiltersBar } from "@/components/filters-bar";
 import { CommentsList } from "@/components/comments-list";
@@ -54,25 +56,7 @@ export function CommentAnalyzer() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-red-600 text-white">
-              <MessageSquare className="size-4" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">CommentIQ</h1>
-              <p className="text-xs text-muted-foreground">
-                Análise inteligente de comentários
-              </p>
-            </div>
-          </div>
-          <Badge variant="secondary" className="gap-1">
-            <Sparkles className="size-3" />
-            POC — Modo demo
-          </Badge>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
         <section className="space-y-2">
@@ -85,6 +69,25 @@ export function CommentAnalyzer() {
             comentários manualmente.
           </p>
         </section>
+
+        <Link
+          href="/live"
+          className="flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40"
+        >
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-red-600 text-white">
+            <Radio className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold">Nuvem de palavras em lives</p>
+              <Badge className="bg-red-600 hover:bg-red-600">Novo</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Conecte o chat de uma live e veja os assuntos em alta, perguntas e
+              o recap por bloco — overlay pronto para o OBS.
+            </p>
+          </div>
+        </Link>
 
         <VideoInput
           onAnalyze={handleAnalyze}

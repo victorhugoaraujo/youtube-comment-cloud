@@ -48,3 +48,24 @@ export interface WordFrequency {
   word: string;
   count: number;
 }
+
+export interface LiveStreamInfo {
+  id: string;
+  title: string;
+  channelName: string;
+  channelAvatar: string;
+  thumbnailUrl: string;
+  concurrentViewers: number;
+  startedAt: string;
+}
+
+export interface LiveChatMessage {
+  id: string;
+  author: string;
+  authorAvatar: string;
+  text: string;
+  isQuestion: boolean;
+  isSuperChat: boolean;
+  superChatAmount?: string;
+  block: number;
+}

@@ -9,9 +9,21 @@ interface VideoInputProps {
   onAnalyze: (url: string) => void;
   loading: boolean;
   analyzed: boolean;
+  placeholder?: string;
+  defaultValue?: string;
+  buttonLabel?: string;
+  loadingLabel?: string;
 }
 
-export function VideoInput({ onAnalyze, loading, analyzed }: VideoInputProps) {
+export function VideoInput({
+  onAnalyze,
+  loading,
+  analyzed,
+  placeholder = "Cole a URL do vídeo do YouTube...",
+  defaultValue = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  buttonLabel = "Analisar comentários",
+  loadingLabel = "Analisando...",
+}: VideoInputProps) {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -25,8 +37,8 @@ export function VideoInput({ onAnalyze, loading, analyzed }: VideoInputProps) {
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           name="url"
-          placeholder="Cole a URL do vídeo do YouTube..."
-          defaultValue="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+          placeholder={placeholder}
+          defaultValue={defaultValue}
           className="pl-10"
           disabled={loading}
         />
@@ -35,10 +47,10 @@ export function VideoInput({ onAnalyze, loading, analyzed }: VideoInputProps) {
         {loading ? (
           <>
             <Loader2 className="size-4 animate-spin" />
-            Analisando...
+            {loadingLabel}
           </>
         ) : (
-          "Analisar comentários"
+          buttonLabel
         )}
       </Button>
       {analyzed && (

@@ -153,6 +153,7 @@ src/
 ## Status atual
 
 - [x] POC com mock data, filtros, stats, nuvem de palavras
+- [x] POC nuvem de palavras em lives (chat simulado + overlay)
 - [ ] Landing page
 - [ ] Pricing + Stripe
 - [ ] Auth

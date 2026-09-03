@@ -16,22 +16,26 @@ const STOP_WORDS = new Set([
   "cada", "todo", "toda", "todos", "todas", "muito", "muita", "muitos",
   "pouco", "pouca", "ainda", "agora", "hoje", "ontem", "sempre", "nunca",
   "bem", "mal", "sim", "não", "nao", "tá", "ta", "né", "ne", "pra", "pro",
+  "kkk", "kkkk", "kkkkk", "haha", "rs", "lol", "msg", "qnd", "pq", "blz",
+  "fala", "galera", "pessoal", "gente", "live", "chat", "manda", "fala",
 ]);
 
-export function extractWordFrequencies(
-  comments: Comment[],
+export function tokenize(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\sáàâãéêíóôõúüç]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+}
+
+export function extractWordFrequenciesFromTexts(
+  texts: string[],
   limit = 30
 ): WordFrequency[] {
   const counts = new Map<string, number>();
 
-  for (const comment of comments) {
-    const words = comment.text
-      .toLowerCase()
-      .replace(/[^\w\sáàâãéêíóôõúüç]/g, " ")
-      .split(/\s+/)
-      .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
-
-    for (const word of words) {
+  for (const text of texts) {
+    for (const word of tokenize(text)) {
       counts.set(word, (counts.get(word) ?? 0) + 1);
     }
   }
@@ -40,4 +44,41 @@ export function extractWordFrequencies(
     .map(([word, count]) => ({ word, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
+}
+
+export function extractWordFrequencies(
+  comments: Comment[],
+  limit = 30
+): WordFrequency[] {
+  return extractWordFrequenciesFromTexts(
+    comments.map((c) => c.text),
+    limit
+  );
+}
+
+export function trendingWords(
+  recentTexts: string[],
+  allTexts: string[],
+  limit = 5
+): WordFrequency[] {
+  if (recentTexts.length === 0) return [];
+
+  const recent = extractWordFrequenciesFromTexts(recentTexts, 20);
+  const overall = new Map(
+    extractWordFrequenciesFromTexts(allTexts, 80).map((w) => [w.word, w.count])
+  );
+
+  const recentTotal = recentTexts.length;
+  const allTotal = Math.max(allTexts.length, 1);
+
+  return recent
+    .map((w) => {
+      const recentShare = w.count / recentTotal;
+      const overallShare = (overall.get(w.word) ?? 0) / allTotal;
+      return { ...w, score: recentShare - overallShare };
+    })
+    .filter((w) => w.count >= 2 && w.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ word, count }) => ({ word, count }));
 }
