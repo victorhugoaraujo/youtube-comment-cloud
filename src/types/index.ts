@@ -12,6 +12,10 @@ export interface Comment {
   replyCount: number;
   authorReplied: boolean;
   sentiment: Sentiment;
+  isQuestion?: boolean;
+  isSpam?: boolean;
+  isHater?: boolean;
+  isTop?: boolean;
 }
 
 export interface VideoInfo {
@@ -30,6 +34,9 @@ export interface CommentFilters {
   sentiment: Sentiment | "all";
   questionsOnly: boolean;
   authorRepliedOnly: boolean;
+  spamOnly: boolean;
+  hatersOnly: boolean;
+  topOnly: boolean;
   sortBy: SortOption;
   dateFrom: string;
   dateTo: string;

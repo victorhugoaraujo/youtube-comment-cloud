@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  name                 String
+  passwordHash         String
+  plan                 String   @default("free")
+  planInterval         String?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  overlayToken         String   @unique
+  liveVideoId          String?
+  videosUsedMonth      Int      @default(0)
+  ideasUsedMonth       Int      @default(0)
+  scriptsUsedMonth     Int      @default(0)
+  usageMonth           String   @default("")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  analyses             Analysis[]
+  channels             Channel[]
+  scripts              Script[]
+}
+
+model Channel {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  youtubeId  String
+  title      String
+  thumbnail  String?
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, youtubeId])
+}
+
+model Analysis {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind         String   @default("vod")
+  videoId      String
+  videoTitle   String
+  channelName  String
+  channelId    String?
+  thumbnailUrl String?
+  commentCount Int      @default(0)
+  source       String   @default("demo")
+  statsJson    String
+  commentsJson String
+  createdAt    DateTime @default(now())
+  scripts      Script[]
+
+  @@index([userId, createdAt])
+}
+
+model Script {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysisId   String?
+  analysis     Analysis? @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+  ideaTitle    String
+  title        String
+  contentJson  String
+  scheduledFor DateTime?
+  createdAt    DateTime  @default(now())
+}

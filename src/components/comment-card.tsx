@@ -49,6 +49,21 @@ export function CommentCard({ comment }: CommentCardProps) {
               Autor respondeu
             </Badge>
           )}
+          {comment.isTop && (
+            <Badge className="text-[10px] bg-amber-500 text-black hover:bg-amber-500">
+              Top
+            </Badge>
+          )}
+          {comment.isSpam && (
+            <Badge variant="destructive" className="text-[10px]">
+              Spam
+            </Badge>
+          )}
+          {comment.isHater && (
+            <Badge variant="destructive" className="text-[10px]">
+              Hater
+            </Badge>
+          )}
         </div>
         <p className="text-sm leading-relaxed">{comment.text}</p>
         <div className="flex items-center gap-4 text-xs text-muted-foreground">

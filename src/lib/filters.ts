@@ -5,6 +5,9 @@ export const DEFAULT_FILTERS: CommentFilters = {
   sentiment: "all",
   questionsOnly: false,
   authorRepliedOnly: false,
+  spamOnly: false,
+  hatersOnly: false,
+  topOnly: false,
   sortBy: "likes",
   dateFrom: "",
   dateTo: "",
@@ -39,6 +42,18 @@ export function filterComments(
 
   if (filters.authorRepliedOnly) {
     result = result.filter((c) => c.authorReplied);
+  }
+
+  if (filters.spamOnly) {
+    result = result.filter((c) => c.isSpam);
+  }
+
+  if (filters.hatersOnly) {
+    result = result.filter((c) => c.isHater);
+  }
+
+  if (filters.topOnly) {
+    result = result.filter((c) => c.isTop);
   }
 
   if (filters.dateFrom) {

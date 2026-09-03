@@ -122,10 +122,49 @@ export function FiltersBar({ filters, onChange, resultCount }: FiltersBarProps) 
           Autor respondeu
         </button>
 
+        <button
+          type="button"
+          onClick={() => update({ topOnly: !filters.topOnly })}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            filters.topOnly
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background hover:bg-muted"
+          }`}
+        >
+          Top comentários
+        </button>
+
+        <button
+          type="button"
+          onClick={() => update({ spamOnly: !filters.spamOnly })}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            filters.spamOnly
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background hover:bg-muted"
+          }`}
+        >
+          Spam
+        </button>
+
+        <button
+          type="button"
+          onClick={() => update({ hatersOnly: !filters.hatersOnly })}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            filters.hatersOnly
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background hover:bg-muted"
+          }`}
+        >
+          Haters
+        </button>
+
         {(filters.search ||
           filters.sentiment !== "all" ||
           filters.questionsOnly ||
           filters.authorRepliedOnly ||
+          filters.spamOnly ||
+          filters.hatersOnly ||
+          filters.topOnly ||
           filters.dateFrom ||
           filters.dateTo) && (
           <button
@@ -136,6 +175,9 @@ export function FiltersBar({ filters, onChange, resultCount }: FiltersBarProps) 
                 sentiment: "all",
                 questionsOnly: false,
                 authorRepliedOnly: false,
+                spamOnly: false,
+                hatersOnly: false,
+                topOnly: false,
                 sortBy: filters.sortBy,
                 dateFrom: "",
                 dateTo: "",

@@ -1,40 +1,41 @@
-# CommentIQ — POC
+# CommentIQ
 
-Aplicação web para analisar e filtrar comentários de vídeos do YouTube. Esta é a **Proof of Concept (POC)** com dados mockados — sem login, sem APIs externas.
-
-## O que faz
-
-- Colar URL de vídeo (simulado) e carregar comentários de demonstração
-- **Filtros**: busca por texto/autor, sentimento, apenas perguntas, autor respondeu, período de datas
-- **Ordenação**: por likes, data ou número de respostas
-- **Estatísticas**: total de comentários, média de likes, perguntas, respostas do autor
-- **Sentimento**: positivo, negativo ou neutro (heurística por palavras-chave)
-- **Nuvem de palavras (VOD)**: termos mais frequentes nos comentários filtrados
-- **Nuvem de palavras em lives** (`/live`): chat simulado em tempo real, termos em alta, perguntas e recap por bloco
-- **Overlay OBS** (`/live/overlay`): nuvem em fundo preto para usar como browser source
+SaaS para criadores no YouTube: filtrar comentários, nuvem de palavras em lives, resumo AI e roteiros a partir da audiência.
 
 ## Como rodar
 
 ```bash
+cp .env.example .env
+# gere um AUTH_SECRET e, se quiser, preencha as chaves abaixo
 npm install
+npx prisma generate
+npx prisma db push
+npx prisma db seed
 npm run dev -- -p 4317
 ```
 
-Abra [http://localhost:4317](http://localhost:4317) (comentários) ou [http://localhost:4317/live](http://localhost:4317/live) (lives).
+Conta demo: `demo@commentiq.app` / `demo12345` (plano Pro).
 
-## Modo demo
+## Integrações
 
-- **Comentários**: 40 comentários mockados. Qualquer URL carrega os mesmos dados após ~1,2s.
-- **Lives**: ~60 mensagens de chat entram em sequência. Use 1x/2x/3x, pause, recap e o overlay.
+Todas as rotas estão ligadas. Sem chave, a app **não quebra** — cai em fallback:
 
-## Próximos passos (SaaS completo)
+| Variável | O que liga | Sem chave |
+|---|---|---|
+| `YOUTUBE_API_KEY` | Comentários e chat de live (Data API v3) | Dataset de demonstração |
+| `OPENAI_API_KEY` | Resumo, ideias e roteiros | Heurística / templates |
+| `STRIPE_SECRET_KEY` + price IDs | Checkout mensal/anual | Ativa o plano localmente |
 
-O plano completo (Free/Pro/Business, Stripe, auth, YouTube API real, resumo AI e geração de roteiros) está em [`docs/PLAN.md`](docs/PLAN.md).
+Também: `AUTH_SECRET`, `DATABASE_URL` (SQLite por padrão), `APP_URL`, `STRIPE_WEBHOOK_SECRET`.
+
+## Planos
+
+- **Free** — 5 vídeos/mês, 500 comentários, filtros e nuvem VOD
+- **Pro (R$ 29/mês ou R$ 290/ano)** — lives, AI, exportação, histórico 30 dias
+- **Business (R$ 79/mês ou R$ 790/ano)** — overlay OBS, 10 canais, comparação, calendário
+
+Detalhes em [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Stack
 
-- Next.js 16 (App Router)
-- TypeScript
-- Tailwind CSS v4
-- shadcn/ui
-- Lucide icons
+Next.js 16, TypeScript, Tailwind, shadcn/ui, Prisma/SQLite, YouTube Data API, OpenAI, Stripe.

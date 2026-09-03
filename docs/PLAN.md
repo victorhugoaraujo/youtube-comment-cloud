@@ -154,13 +154,13 @@ src/
 
 - [x] POC com mock data, filtros, stats, nuvem de palavras
 - [x] POC nuvem de palavras em lives (chat simulado + overlay)
-- [ ] Landing page
-- [ ] Pricing + Stripe
-- [ ] Auth
-- [ ] YouTube API real
-- [ ] Resumo AI
-- [ ] Ideias de vídeo a partir dos comentários
-- [ ] Geração de roteiro AI
-- [ ] Nuvem de palavras em lives (chat ao vivo + replay)
-- [ ] Overlay OBS da nuvem (Business)
-- [ ] Exportação CSV/PDF
+- [x] Landing page
+- [x] Pricing + Stripe (com fallback local)
+- [x] Auth
+- [x] YouTube API real (com fallback demo)
+- [x] Resumo AI
+- [x] Ideias de vídeo a partir dos comentários
+- [x] Geração de roteiro AI
+- [x] Nuvem de palavras em lives (chat ao vivo + replay)
+- [x] Overlay OBS da nuvem (Business)
+- [x] Exportação CSV/PDF
