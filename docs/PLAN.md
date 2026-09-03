@@ -4,7 +4,7 @@
 
 ## Proposta de Valor
 
-Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentários em insights acionáveis **e em ideias de novos vídeos**. O criador cola a URL, entende o que a audiência está pedindo e gera roteiros prontos para gravar — algo que o YouTube Studio não oferece.
+Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentários **e o chat de lives** em insights acionáveis **e em ideias de novos vídeos**. O criador cola a URL, entende o que a audiência está pedindo, vê uma nuvem de palavras ao vivo e gera roteiros prontos para gravar — algo que o YouTube Studio não oferece.
 
 ## Planos e Pricing
 
@@ -16,7 +16,8 @@ Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentári
 | Análise de sentimento | Limitada | Completa (AI) | Completa (AI) |
 | Detecção de perguntas | Sim | Sim | Sim |
 | Exportar CSV/PDF | — | Sim | Sim |
-| Nuvem de palavras | Sim | Sim | Sim |
+| Nuvem de palavras (VOD) | Sim | Sim | Sim |
+| Nuvem de palavras em live | — | Ao vivo + replay | Ao vivo + replay + overlay OBS |
 | Resumo AI dos comentários | — | Sim | Sim |
 | Ideias de vídeo a partir dos comentários | — | 5/mês | Ilimitadas |
 | Geração de roteiro AI | — | 5/mês | Ilimitados |
@@ -33,7 +34,7 @@ Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentári
 - Filtros: busca por texto, ordenação (likes, data, respostas), período, apenas perguntas
 - Análise de sentimento (positivo/negativo/neutro) com indicador visual
 - Estatísticas: total de comentários, média de likes, distribuição de sentimento
-- Nuvem de palavras mais frequentes
+- Nuvem de palavras mais frequentes (vídeos gravados / VOD)
 
 ### Pro
 - **Exportação CSV/PDF** dos comentários filtrados
@@ -44,6 +45,7 @@ Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentári
 - **Histórico**: salva análises anteriores por 30 dias
 - **Ideias de vídeo (AI)**: agrupa perguntas e pedidos recorrentes da audiência em temas de próximos vídeos (até 5 gerações/mês)
 - **Roteiro AI**: a partir de um tema (ou de um cluster de comentários), gera um roteiro completo — título, gancho, seções, CTA e referências aos comentários que originaram a ideia (até 5 roteiros/mês)
+- **Nuvem de palavras em live**: lê o chat da transmissão (`liveChatMessages`) e atualiza a nuvem em tempo quase real; após o encerramento, gera o replay da nuvem e os picos de menção
 
 ### Business
 - **Múltiplos canais**: gerencia até 10 canais em um dashboard
@@ -53,6 +55,9 @@ Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentári
 - **Ideias e roteiros ilimitados**
 - **Calendário editorial**: fila de roteiros gerados a partir de vários vídeos do canal
 - **Variações de roteiro**: gera 2–3 ângulos diferentes para o mesmo tema (ex.: tutorial vs. lista vs. reação)
+- **Overlay OBS**: URL transparente da nuvem para o streamer colocar na live (browser source)
+- **Perguntas do chat**: destaca perguntas recorrentes do chat para o streamer responder na hora
+- **Recap da live**: após o stream, exporta nuvem, top palavras por bloco de tempo e ideias de vídeo derivadas do chat
 
 ### Geração de roteiros (fluxo)
 
@@ -67,6 +72,22 @@ Ferramenta SaaS para criadores de conteúdo no YouTube que transforma comentári
    - Lista dos comentários-fonte (para o criador citar ou responder no vídeo)
 4. O criador edita, copia ou exporta o roteiro.
 
+### Nuvem de palavras em lives (fluxo)
+
+O chat de live é outro volume que o Studio não resume: milhares de mensagens por hora, sem filtro de temas.
+
+1. O criador cola a URL da live (ao vivo ou já encerrada com replay de chat).
+2. A app obtém o `liveChatId` via YouTube Data API (`videos.list` → `liveStreamingDetails.activeLiveChatId`) e faz polling de `liveChatMessages.list`.
+3. Durante a live:
+   - A nuvem atualiza a cada poucos segundos com as palavras mais frequentes (stop words removidas, spam/emotes filtrados).
+   - Destaque de perguntas (`?`) e termos em alta no bloco recente (ex.: últimos 2 minutos).
+   - No Business, uma URL de overlay (fundo transparente) pode ir para o OBS.
+4. Depois da live:
+   - Replay da nuvem ao longo do tempo (quais palavras explodiram em cada bloco).
+   - Recap: top termos, perguntas não respondidas, temas para o próximo vídeo/roteiro.
+
+Limitações da API: o polling interval é definido pelo YouTube; chat replay nem sempre está disponível em lives antigas; quota da Data API é mais agressiva em lives de alto volume — o plano Business prioriza esse uso.
+
 ## Arquitetura Técnica
 
 ```
@@ -77,9 +98,10 @@ Frontend (Next.js)
 └── Auth Pages
 
 API Routes
-├── /api/comments      → YouTube Data API v3
+├── /api/comments      → YouTube Data API v3 (commentThreads)
+├── /api/live-chat     → YouTube Data API v3 (liveChatMessages)
 ├── /api/analysis      → OpenAI (resumo + sentimento)
-├── /api/ideas         → OpenAI (clusters de temas a partir dos comentários)
+├── /api/ideas         → OpenAI (clusters de temas a partir dos comentários/chat)
 ├── /api/scripts       → OpenAI (geração de roteiro a partir de um tema)
 ├── /api/export        → CSV/PDF
 └── /api/webhooks/stripe
@@ -102,6 +124,7 @@ src/
 │   ├── auth/register/page.tsx
 │   └── api/
 │       ├── comments/route.ts
+│       ├── live-chat/route.ts
 │       ├── analysis/route.ts
 │       ├── ideas/route.ts
 │       ├── scripts/route.ts
@@ -123,9 +146,9 @@ src/
 
 1. **Auth**: NextAuth ou similar
 2. **Stripe**: Checkout + webhooks para planos mensais/anuais
-3. **OpenAI**: resumo, clustering de temas e geração de roteiros a partir dos comentários
-4. **YouTube API**: `commentThreads.list` com paginação
-5. **Banco**: Supabase/Postgres para histórico e usuários
+3. **OpenAI**: resumo, clustering de temas e geração de roteiros a partir dos comentários (e do recap de lives)
+4. **YouTube API**: `commentThreads.list` (VOD) e `liveChatMessages.list` (lives, com polling)
+5. **Banco**: Supabase/Postgres para histórico, usuários e snapshots da nuvem de live
 
 ## Status atual
 
@@ -137,4 +160,6 @@ src/
 - [ ] Resumo AI
 - [ ] Ideias de vídeo a partir dos comentários
 - [ ] Geração de roteiro AI
+- [ ] Nuvem de palavras em lives (chat ao vivo + replay)
+- [ ] Overlay OBS da nuvem (Business)
 - [ ] Exportação CSV/PDF
