@@ -145,7 +145,7 @@ src/
 ## Decisões para o MVP SaaS
 
 1. **Auth**: NextAuth ou similar
-2. **Stripe**: Checkout + webhooks para planos mensais/anuais
+2. **Pagamento**: Stripe adiado. Por agora o plano é ativado na conta, sem cobrança.
 3. **OpenAI**: resumo, clustering de temas e geração de roteiros a partir dos comentários (e do recap de lives)
 4. **YouTube API**: `commentThreads.list` (VOD) e `liveChatMessages.list` (lives, com polling)
 5. **Banco**: Supabase/Postgres para histórico, usuários e snapshots da nuvem de live
@@ -155,7 +155,7 @@ src/
 - [x] POC com mock data, filtros, stats, nuvem de palavras
 - [x] POC nuvem de palavras em lives (chat simulado + overlay)
 - [x] Landing page
-- [x] Pricing + Stripe (com fallback local)
+- [x] Pricing (ativação de plano local; Stripe adiado)
 - [x] Auth
 - [x] YouTube API real (com fallback demo)
 - [x] Resumo AI

@@ -145,14 +145,15 @@ export default function PricingPage() {
                   disabled={loading === p.id}
                   onClick={() => checkout(p.id)}
                 >
-                  {p.id === "free" ? "Criar conta" : "Assinar"}
+                  {p.id === "free" ? "Criar conta" : "Ativar plano"}
                 </Button>
               </div>
             );
           })}
         </div>
         <p className="mt-8 text-xs text-muted-foreground">
-          Sem chave Stripe, o checkout ativa o plano localmente para desenvolvimento.{" "}
+          Cobrança com Stripe fica para depois. Por agora, ativar o plano só
+          libera as features na sua conta.{" "}
           <Link href="/login" className="underline">
             Já tem conta?
           </Link>

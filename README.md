@@ -24,9 +24,10 @@ Todas as rotas estão ligadas. Sem chave, a app **não quebra** — cai em fallb
 |---|---|---|
 | `YOUTUBE_API_KEY` | Comentários e chat de live (Data API v3) | Dataset de demonstração |
 | `OPENAI_API_KEY` | Resumo, ideias e roteiros | Heurística / templates |
-| `STRIPE_SECRET_KEY` + price IDs | Checkout mensal/anual | Ativa o plano localmente |
 
-Também: `AUTH_SECRET`, `DATABASE_URL` (SQLite por padrão), `APP_URL`, `STRIPE_WEBHOOK_SECRET`.
+Stripe está **adiado**. Ativar Pro/Business na conta libera as features sem cobrança. As variáveis `STRIPE_*` no `.env.example` ficam para quando formos ligar o checkout.
+
+Também: `AUTH_SECRET`, `DATABASE_URL` (SQLite por padrão), `APP_URL`.
 
 ## Planos
 
@@ -38,4 +39,4 @@ Detalhes em [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Stack
 
-Next.js 16, TypeScript, Tailwind, shadcn/ui, Prisma/SQLite, YouTube Data API, OpenAI, Stripe.
+Next.js 16, TypeScript, Tailwind, shadcn/ui, Prisma/SQLite, YouTube Data API, OpenAI.
