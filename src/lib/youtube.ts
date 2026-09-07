@@ -6,6 +6,34 @@ import type { Comment, VideoInfo } from "@/types";
 
 const YT = "https://www.googleapis.com/youtube/v3";
 
+async function youtubeError(res: Response, fallback: string): Promise<Error> {
+  const text = await res.text();
+  try {
+    const json = JSON.parse(text) as {
+      error?: { message?: string; errors?: Array<{ reason?: string }> };
+    };
+    const reason = json.error?.errors?.[0]?.reason;
+    if (reason === "commentsDisabled") {
+      return new Error("Este vídeo está com os comentários desativados no YouTube.");
+    }
+    if (reason === "quotaExceeded") {
+      return new Error("A cota diária da YouTube API esgotou. Tente de novo amanhã.");
+    }
+    if (reason === "keyInvalid" || reason === "ipRefererBlocked") {
+      return new Error(
+        "YOUTUBE_API_KEY recusada. No Google Cloud, ative YouTube Data API v3 e tire restrição de IP (a Vercel muda de IP).",
+      );
+    }
+    if (reason === "videoNotFound" || res.status === 404) {
+      return new Error("Vídeo não encontrado. Use um vídeo público.");
+    }
+    if (json.error?.message) return new Error(json.error.message);
+  } catch {
+    /* use fallback */
+  }
+  return new Error(`${fallback} (${res.status})`);
+}
+
 export function parseVideoId(input: string): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
@@ -100,9 +128,7 @@ export async function fetchVideoMeta(videoId: string): Promise<{
   url.searchParams.set("key", key);
 
   const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`YouTube videos.list falhou (${res.status})`);
-  }
+  if (!res.ok) throw await youtubeError(res, "YouTube videos.list falhou");
   const data = (await res.json()) as { items?: YtVideo[] };
   const item = data.items?.[0];
   if (!item) throw new Error("Vídeo não encontrado");
@@ -163,10 +189,7 @@ export async function fetchComments(
     if (pageToken) url.searchParams.set("pageToken", pageToken);
 
     const res = await fetch(url);
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`YouTube commentThreads.list falhou (${res.status}): ${body.slice(0, 180)}`);
-    }
+    if (!res.ok) throw await youtubeError(res, "YouTube commentThreads.list falhou");
     const data = (await res.json()) as {
       items?: YtCommentThread[];
       nextPageToken?: string;
@@ -274,10 +297,7 @@ export async function fetchLiveChatPage(
   if (pageToken) url.searchParams.set("pageToken", pageToken);
 
   const res = await fetch(url);
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`YouTube liveChat.messages falhou (${res.status}): ${body.slice(0, 180)}`);
-  }
+  if (!res.ok) throw await youtubeError(res, "YouTube liveChat.messages falhou");
 
   const data = (await res.json()) as {
     nextPageToken?: string;

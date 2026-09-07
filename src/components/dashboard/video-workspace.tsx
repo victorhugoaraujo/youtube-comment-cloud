@@ -20,7 +20,13 @@ import type { SessionUser } from "@/lib/auth";
 import type { Comment, CommentFilters, VideoInfo } from "@/types";
 import type { VideoIdea, VideoScript } from "@/lib/openai";
 
-export function VideoWorkspace({ user }: { user: SessionUser }) {
+export function VideoWorkspace({
+  user,
+  youtubeReady,
+}: {
+  user: SessionUser;
+  youtubeReady: boolean;
+}) {
   const [loading, setLoading] = useState(false);
   const [source, setSource] = useState<"youtube" | "demo" | null>(null);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
@@ -47,6 +53,7 @@ export function VideoWorkspace({ user }: { user: SessionUser }) {
         video: VideoInfo;
         comments: Comment[];
         source: "youtube" | "demo";
+        truncated?: boolean;
       }>("/api/comments", { method: "POST", body: JSON.stringify({ url }) });
       setAnalysisId(data.analysisId);
       setVideo(data.video);
@@ -54,7 +61,15 @@ export function VideoWorkspace({ user }: { user: SessionUser }) {
       setSource(data.source);
       setFilters(DEFAULT_FILTERS);
       if (data.source === "demo") {
-        toast.message("YouTube API sem chave — usando comentários de demonstração.");
+        toast.message("YouTube API sem chave na Vercel — usando comentários de demonstração.");
+      } else if (data.comments.length === 0) {
+        toast.message("Vídeo encontrado, mas não há comentários públicos.");
+      } else {
+        toast.success(
+          data.truncated
+            ? `Comentários reais carregados (limite do plano: ${data.comments.length}).`
+            : `${data.comments.length} comentários reais de “${data.video.title}”.`,
+        );
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao analisar");
@@ -144,11 +159,36 @@ export function VideoWorkspace({ user }: { user: SessionUser }) {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Analisar comentários</h1>
         <p className="text-muted-foreground">
-          Cole a URL do vídeo. Sem `YOUTUBE_API_KEY` a busca usa o dataset de demo.
+          Cole a URL de um vídeo público do YouTube com comentários ligados.
         </p>
       </div>
 
-      <VideoInput onAnalyze={handleAnalyze} loading={loading} analyzed={Boolean(video)} />
+      {!youtubeReady && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+          A YouTube Data API não está ligada neste deploy. Sem{" "}
+          <code className="rounded bg-muted px-1">YOUTUBE_API_KEY</code> na Vercel (Production) o
+          CommentIQ usa um dataset de demo. Adicione a chave, faça Redeploy e cole a URL de novo.
+        </div>
+      )}
+
+      {youtubeReady && (
+        <div className="rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+          YouTube API ligada. Cole qualquer vídeo público — Shorts, lives gravadas ou VOD. Lives
+          ao vivo com chat ficam em{" "}
+          <Link href="/dashboard/live" className="underline">
+            Nuvem da live
+          </Link>
+          .
+        </div>
+      )}
+
+      <VideoInput
+        onAnalyze={handleAnalyze}
+        loading={loading}
+        analyzed={Boolean(video)}
+        source={source}
+        placeholder="https://www.youtube.com/watch?v=..."
+      />
 
       {loading && (
         <div className="flex flex-col items-center gap-3 py-16">

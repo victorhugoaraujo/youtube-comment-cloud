@@ -12,7 +12,9 @@ export function CommentsList({ comments }: CommentsListProps) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-muted-foreground">
         <MessageSquareOff className="size-10 opacity-40" />
-        <p className="text-sm">Nenhum comentário encontrado com os filtros atuais.</p>
+        <p className="text-sm">
+          Nenhum comentário encontrado. Confira os filtros ou se o vídeo tem comentários públicos.
+        </p>
       </div>
     );
   }

@@ -36,6 +36,8 @@ Além do `DATABASE_URL` (automático), em **Settings → Environment Variables**
 
 Stripe continua vazio. Não use prefixo `NEXT_PUBLIC_` nessas chaves.
 
+Para analisar um **vídeo real**, `YOUTUBE_API_KEY` precisa estar em Production (YouTube Data API v3 no Google Cloud, sem restrição de IP). Confira em `https://seu-dominio/api/health`: `"youtube": true`. Sem isso o dashboard avisa e cai no dataset de demo.
+
 ## 3. Importar na Vercel
 
 1. [vercel.com](https://vercel.com) → Add New → Project → o repo do GitHub.

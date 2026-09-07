@@ -26,7 +26,13 @@ interface LiveMsg {
   superChatAmount?: string;
 }
 
-export function LiveWorkspace({ user }: { user: SessionUser }) {
+export function LiveWorkspace({
+  user,
+  youtubeReady,
+}: {
+  user: SessionUser;
+  youtubeReady: boolean;
+}) {
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -161,9 +167,16 @@ export function LiveWorkspace({ user }: { user: SessionUser }) {
       <div>
         <h1 className="text-2xl font-bold">Nuvem de palavras da live</h1>
         <p className="text-muted-foreground">
-          Com `YOUTUBE_API_KEY`, o chat vem da Data API. Sem chave, a simulação demo entra no lugar.
+          Cole a URL de uma live que esteja no ar agora, com o chat ativo.
         </p>
       </div>
+
+      {!youtubeReady && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+          Sem <code className="rounded bg-muted px-1">YOUTUBE_API_KEY</code> na Vercel o chat é
+          simulado. Para uma live de verdade, adicione a chave e faça Redeploy.
+        </div>
+      )}
 
       {!user.limits.liveChat && (
         <div className="rounded-xl border p-4 text-sm">
@@ -175,7 +188,8 @@ export function LiveWorkspace({ user }: { user: SessionUser }) {
         onAnalyze={connect}
         loading={connecting}
         analyzed={connected}
-        placeholder="URL da live do YouTube..."
+        source={connected ? source : null}
+        placeholder="https://www.youtube.com/watch?v=..."
         buttonLabel="Conectar ao chat"
         loadingLabel="Conectando..."
       />

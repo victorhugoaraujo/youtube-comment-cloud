@@ -9,6 +9,7 @@ interface VideoInputProps {
   onAnalyze: (url: string) => void;
   loading: boolean;
   analyzed: boolean;
+  source?: "youtube" | "demo" | null;
   placeholder?: string;
   defaultValue?: string;
   buttonLabel?: string;
@@ -19,8 +20,9 @@ export function VideoInput({
   onAnalyze,
   loading,
   analyzed,
+  source = null,
   placeholder = "Cole a URL do vídeo do YouTube...",
-  defaultValue = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  defaultValue = "",
   buttonLabel = "Analisar comentários",
   loadingLabel = "Analisando...",
 }: VideoInputProps) {
@@ -28,7 +30,9 @@ export function VideoInput({
     e.preventDefault();
     const form = e.currentTarget;
     const input = form.elements.namedItem("url") as HTMLInputElement;
-    onAnalyze(input.value);
+    const value = input.value.trim();
+    if (!value) return;
+    onAnalyze(value);
   }
 
   return (
@@ -37,10 +41,14 @@ export function VideoInput({
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           name="url"
+          type="text"
+          inputMode="url"
+          autoComplete="off"
           placeholder={placeholder}
           defaultValue={defaultValue}
           className="pl-10"
           disabled={loading}
+          required
         />
       </div>
       <Button type="submit" disabled={loading} className="shrink-0">
@@ -53,9 +61,9 @@ export function VideoInput({
           buttonLabel
         )}
       </Button>
-      {analyzed && (
-        <Badge variant="secondary" className="self-center sm:hidden">
-          Modo demo
+      {analyzed && source && (
+        <Badge variant={source === "youtube" ? "default" : "secondary"} className="self-center sm:hidden">
+          {source === "youtube" ? "YouTube" : "Demo"}
         </Badge>
       )}
     </form>

@@ -8,5 +8,7 @@ export async function GET() {
     ok: Boolean(url),
     using: url ? "resolved" : "none",
     keys,
+    youtube: Boolean(process.env.YOUTUBE_API_KEY),
+    openai: Boolean(process.env.OPENAI_API_KEY),
   });
 }
