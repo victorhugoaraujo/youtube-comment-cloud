@@ -23,16 +23,18 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await generateIdeas(body.comments, body.videoTitle);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { ideasUsedMonth: { increment: 1 } },
-    });
+    if (result.ideas.length) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { ideasUsedMonth: { increment: 1 } },
+      });
+    }
     return NextResponse.json({
       ...result,
       remaining:
         user.limits.aiIdeas === null
           ? null
-          : user.limits.aiIdeas - user.ideasUsedMonth - 1,
+          : user.limits.aiIdeas - user.ideasUsedMonth - (result.ideas.length ? 1 : 0),
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Falha ao gerar ideias.";

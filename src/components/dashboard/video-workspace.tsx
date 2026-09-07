@@ -98,11 +98,18 @@ export function VideoWorkspace({
     if (!user.limits.aiIdeas) return toast.error("Ideias entram no plano Pro.");
     setBusy("ideas");
     try {
-      const data = await api<{ ideas: VideoIdea[]; source?: string }>("/api/ideas", {
+      const data = await api<{
+        ideas: VideoIdea[];
+        source?: string;
+        emptyReason?: string;
+      }>("/api/ideas", {
         method: "POST",
         body: JSON.stringify({ comments, videoTitle: video?.title }),
       });
       setIdeas(data.ideas);
+      if (!data.ideas.length) {
+        toast.message(data.emptyReason || "Nenhum tema com massa suficiente nos comentários.");
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha nas ideias");
     } finally {
@@ -275,13 +282,20 @@ export function VideoWorkspace({
               <CardHeader>
                 <CardTitle className="text-sm">Ideias de próximos vídeos</CardTitle>
                 <p className="text-xs font-normal text-muted-foreground">
-                  Extraídas dos comentários (perguntas e pedidos), não do tema do vídeo atual.
+                  Só entram temas com muitos comentários parecidos (ou muitos likes). Dois
+                  comentários isolados não viram vídeo.
                 </p>
               </CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 {ideas.map((idea) => (
                   <div key={idea.id} className="rounded-lg border p-3">
                     <p className="font-medium">{idea.title}</p>
+                    <p className="mt-1 text-xs font-medium text-foreground/80">
+                      {(idea.supportCount ?? 0).toLocaleString("pt-BR")} comentários
+                      {typeof idea.totalLikes === "number"
+                        ? ` · ${idea.totalLikes.toLocaleString("pt-BR")} likes`
+                        : ""}
+                    </p>
                     <p className="mt-1 text-xs text-muted-foreground">{idea.reason}</p>
                     {idea.sampleComments?.length > 0 && (
                       <ul className="mt-2 space-y-1 border-l-2 border-muted pl-3 text-xs text-muted-foreground">
