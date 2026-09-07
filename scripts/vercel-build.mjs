@@ -3,12 +3,13 @@ import { existsSync, readFileSync } from "node:fs";
 
 const URL_KEYS = [
   "DATABASE_URL",
-  "POSTGRES_PRISMA_URL",
   "POSTGRES_URL",
   "PRISMA_DATABASE_URL",
+  "POSTGRES_PRISMA_URL",
+  "POSTGRES_URL_NON_POOLING",
+  "DIRECT_URL",
   "STORAGE_URL",
   "STORAGE_DATABASE_URL",
-  "POSTGRES_URL_NON_POOLING",
 ];
 
 function loadDotEnv() {
@@ -33,14 +34,33 @@ function loadDotEnv() {
   }
 }
 
-function resolveDatabaseUrl() {
-  for (const key of URL_KEYS) {
-    const value = (process.env[key] ?? "").trim();
-    if (value && !value.startsWith("file:")) {
-      return { key, url: value };
-    }
+function normalize(raw) {
+  let value = String(raw ?? "").trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1).trim();
   }
-  return null;
+  return value;
+}
+
+function isPostgres(value) {
+  return /^(postgres|postgresql):\/\//i.test(value);
+}
+
+function isPrismaProtocol(value) {
+  return /^(prisma|prisma\+postgres):\/\//i.test(value);
+}
+
+function resolve() {
+  const found = [];
+  for (const key of URL_KEYS) {
+    const url = normalize(process.env[key]);
+    if (!url || url.startsWith("file:")) continue;
+    if (isPostgres(url) || isPrismaProtocol(url)) found.push({ key, url });
+  }
+  return found.find((item) => isPostgres(item.url)) ?? found[0] ?? null;
 }
 
 function run(command) {
@@ -54,27 +74,31 @@ function run(command) {
 
 loadDotEnv();
 
-const resolved = resolveDatabaseUrl();
+const resolved = resolve();
 if (resolved) {
   process.env.DATABASE_URL = resolved.url;
-  console.log(`CommentIQ: using ${resolved.key} for Prisma`);
+  console.log(`CommentIQ: Prisma will use ${resolved.key}`);
 } else {
   const status = URL_KEYS.map((key) => {
     const value = process.env[key];
     if (value == null) return `${key}=ausente`;
-    if (!value.trim()) return `${key}=vazio`;
-    return `${key}=sqlite`;
+    if (!normalize(value)) return `${key}=vazio`;
+    return `${key}=outro`;
   }).join(", ");
   console.warn(
-    `CommentIQ: no Postgres URL at build time (${status}). Skipping migrate/seed. Next.js will still build. Login needs a postgres:// DATABASE_URL at runtime.`,
+    `CommentIQ: no Postgres URL at build time (${status}). Skipping migrate/seed; runtime will use POSTGRES_URL / PRISMA_DATABASE_URL if Vercel only injects them then.`,
   );
 }
 
 run("npx prisma generate");
 
-if (resolved) {
+if (resolved && isPostgres(resolved.url)) {
   run("npx prisma migrate deploy");
   run("npx prisma db seed");
+} else if (resolved) {
+  console.warn(
+    `CommentIQ: ${resolved.key} is not postgres://; skipping migrate at build. Tables are created on first login.`,
+  );
 }
 
 run("npx next build");

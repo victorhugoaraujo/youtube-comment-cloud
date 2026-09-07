@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import type { PrismaClient } from "@prisma/client";
-import { DatabaseNotConfiguredError, resolveDatabaseUrl } from "@/lib/database-url";
+import { DatabaseNotConfiguredError, applyResolvedDatabaseUrl } from "@/lib/database-url";
 import { currentUsageMonth } from "@/lib/plans";
 
 const INIT_SQL = [
@@ -106,7 +106,7 @@ async function seedDemoUser(prisma: PrismaClient) {
 export async function ensureDatabase(prisma: PrismaClient) {
   if (!ensured) {
     ensured = (async () => {
-      if (!resolveDatabaseUrl()) throw new DatabaseNotConfiguredError();
+      if (!applyResolvedDatabaseUrl()) throw new DatabaseNotConfiguredError();
       try {
         await prisma.user.findFirst({ select: { id: true } });
       } catch {

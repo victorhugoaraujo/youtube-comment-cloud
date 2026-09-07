@@ -1,9 +1,9 @@
 import { PrismaClient } from "@prisma/client";
-import { resolveDatabaseUrl } from "@/lib/database-url";
+import { applyResolvedDatabaseUrl } from "@/lib/database-url";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-const databaseUrl = resolveDatabaseUrl();
+const databaseUrl = applyResolvedDatabaseUrl();
 
 export const prisma =
   globalForPrisma.prisma ??
