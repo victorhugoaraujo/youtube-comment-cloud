@@ -19,39 +19,64 @@ export interface VideoScript {
   variations?: Array<{ angle: string; title: string; hook: string }>;
 }
 
+function pickCommentsForIdeas(comments: Comment[], limit = 140): Comment[] {
+  const request =
+    /faz(er)? um v[ií]deo|queria (ver|entender|saber)|explica(?:r)? |como (fa[cç]o|fazer|funciona)|pr[oó]ximo v[ií]deo|faz um sobre|d[uú]vida|n[aã]o entendi|e se eu|e sobre/i;
+  const questions = comments.filter((c) => isQuestion(c.text));
+  const requests = comments.filter((c) => request.test(c.text));
+  const liked = [...comments].sort((a, b) => b.likes - a.likes);
+  const seen = new Set<string>();
+  const out: Comment[] = [];
+  for (const c of [...questions, ...requests, ...liked, ...comments]) {
+    if (seen.has(c.id)) continue;
+    seen.add(c.id);
+    out.push(c);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 function fallbackIdeas(comments: Comment[]): VideoIdea[] {
   const questions = comments.filter((c) => isQuestion(c.text));
-  const buckets: Array<{ id: string; title: string; keys: string[] }> = [
-    { id: "thumb", title: "Como criar thumbnails que aumentam o CTR", keys: ["thumbnail", "thumb", "ctr"] },
-    { id: "edit", title: "Tutorial de edição no CapCut para YouTube", keys: ["capcut", "edição", "editar", "premiere"] },
-    { id: "money", title: "Caminho real até a monetização", keys: ["monetização", "monetizacao", "ypp", "adsense"] },
-    { id: "shorts", title: "Como usar Shorts como funil para o vídeo longo", keys: ["shorts", "short"] },
-    { id: "gear", title: "Setup barato: câmera, microfone e luz", keys: ["câmera", "camera", "microfone", "celular"] },
-  ];
-
-  const ideas: VideoIdea[] = buckets
-    .map((b) => {
-      const hits = comments.filter((c) =>
-        b.keys.some((k) => c.text.toLowerCase().includes(k))
-      );
-      if (hits.length < 2) return null;
-      return {
-        id: b.id,
-        title: b.title,
-        reason: `${hits.length} comentários pedem ou citam este tema.`,
-        commentIds: hits.slice(0, 6).map((c) => c.id),
-        sampleComments: hits.slice(0, 3).map((c) => c.text),
-      };
-    })
-    .filter((x): x is VideoIdea => Boolean(x));
+  const request = comments.filter((c) =>
+    /faz(er)? um v[ií]deo|queria|explica|como (fa[cç]o|fazer)|d[uú]vida|n[aã]o entendi/i.test(
+      c.text
+    )
+  );
+  const ideas: VideoIdea[] = [];
 
   if (questions.length >= 2) {
-    ideas.unshift({
+    ideas.push({
       id: "faq",
-      title: "Respondendo as dúvidas mais frequentes da audiência",
-      reason: `${questions.length} perguntas em aberto nos comentários.`,
+      title: "Respondendo as dúvidas que mais apareceram nos comentários",
+      reason: `${questions.length} perguntas em aberto — o próximo vídeo deve responder essas, não repetir o tema atual.`,
       commentIds: questions.slice(0, 8).map((c) => c.id),
       sampleComments: questions.slice(0, 3).map((c) => c.text),
+    });
+  }
+
+  if (request.length >= 2) {
+    ideas.push({
+      id: "pedidos",
+      title: "O que a audiência pediu explicitamente para o próximo vídeo",
+      reason: `${request.length} comentários pedem tutorial, explicação ou continuação.`,
+      commentIds: request.slice(0, 8).map((c) => c.id),
+      sampleComments: request.slice(0, 3).map((c) => c.text),
+    });
+  }
+
+  const stories = comments.filter((c) =>
+    /quebrei a cara|quebrando a cara|me endividei|caí nessa|nunca mais faço|aprendi com/i.test(
+      c.text
+    )
+  );
+  if (stories.length >= 2) {
+    ideas.push({
+      id: "proximos-passos",
+      title: "O passo seguinte: o que fazer depois do erro que a audiência relatou",
+      reason: `${stories.length} pessoas contaram a própria experiência e pedem o que vem depois.`,
+      commentIds: stories.slice(0, 8).map((c) => c.id),
+      sampleComments: stories.slice(0, 3).map((c) => c.text),
     });
   }
 
@@ -173,14 +198,36 @@ export async function summarizeComments(comments: Comment[]): Promise<{
   return { summary: fallbackSummary(comments), source: "heuristic" };
 }
 
-export async function generateIdeas(comments: Comment[]): Promise<{
+export async function generateIdeas(
+  comments: Comment[],
+  videoTitle?: string
+): Promise<{
   ideas: VideoIdea[];
   source: "openai" | "heuristic";
 }> {
-  const sample = comments.slice(0, 80).map((c) => `[${c.id}] ${c.text}`);
+  const sample = pickCommentsForIdeas(comments).map(
+    (c) => `[${c.id}] likes=${c.likes} ${c.isQuestion ? "PERGUNTA" : "COMEN"}: ${c.text}`
+  );
+  const titleLine = videoTitle
+    ? `O vídeo que eles acabaram de assistir se chama: "${videoTitle}".`
+    : "O título do vídeo atual não foi informado.";
   try {
     const json = await chatJson<{ ideas: VideoIdea[] }>(
-      `Agrupar comentários em 4 a 6 ideias de próximos vídeos. JSON: {"ideas":[{"id":"slug","title":"...","reason":"...","commentIds":["id"],"sampleComments":["..."]}]}\n\n${sample.join("\n")}`
+      `${titleLine}
+
+Tarefa: sugerir 4 a 6 ideias para o PRÓXIMO vídeo, extraídas SOMENTE dos comentários abaixo.
+
+Regras:
+- NÃO resuma nem repita o tema do vídeo atual.
+- Cada ideia tem que nascer de pergunta, pedido, dúvida ou relato da audiência (o passo seguinte).
+- reason deve citar quantos comentários sustentam a ideia.
+- sampleComments deve copiar trechos reais dos comentários, não parafrasear o título do vídeo.
+- Se a audiência relata experiência pessoal (dívida, erro, "quebrando a cara"), o próximo vídeo é o desdobramento ("e agora?", "como sair", "o que eu faria diferente") — não o mesmo assunto de novo.
+
+JSON: {"ideas":[{"id":"slug","title":"...","reason":"...","commentIds":["id"],"sampleComments":["..."]}]}
+
+Comentários:
+${sample.join("\n")}`
     );
     if (json?.ideas?.length) return { ideas: json.ideas, source: "openai" };
   } catch {

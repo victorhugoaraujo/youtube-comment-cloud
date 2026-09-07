@@ -13,9 +13,10 @@ import type { CommentStats } from "@/types";
 
 interface StatsPanelProps {
   stats: CommentStats;
+  youtubeTotal?: number;
 }
 
-export function StatsPanel({ stats }: StatsPanelProps) {
+export function StatsPanel({ stats, youtubeTotal }: StatsPanelProps) {
   const total = stats.filtered || 1;
   const positivePct = Math.round((stats.sentimentBreakdown.positive / total) * 100);
   const negativePct = Math.round((stats.sentimentBreakdown.negative / total) * 100);
@@ -31,9 +32,11 @@ export function StatsPanel({ stats }: StatsPanelProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-bold">{stats.filtered}</p>
+          <p className="text-2xl font-bold">{stats.filtered.toLocaleString("pt-BR")}</p>
           <p className="text-xs text-muted-foreground">
-            de {stats.total} total
+            {youtubeTotal && youtubeTotal > stats.total
+              ? `${stats.total.toLocaleString("pt-BR")} analisados · ${youtubeTotal.toLocaleString("pt-BR")} no YouTube`
+              : `de ${stats.total.toLocaleString("pt-BR")} analisados`}
           </p>
         </CardContent>
       </Card>

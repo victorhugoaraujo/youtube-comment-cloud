@@ -9,6 +9,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:setup": "prisma generate && prisma db push && tsx prisma/seed.ts",
+    "test:lib": "tsx src/lib/sentiment.check.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

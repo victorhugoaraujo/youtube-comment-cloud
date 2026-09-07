@@ -75,29 +75,52 @@ interface YtVideo {
   };
 }
 
+interface YtCommentSnippet {
+  authorDisplayName?: string;
+  authorProfileImageUrl?: string;
+  authorChannelId?: { value?: string };
+  textOriginal?: string;
+  textDisplay?: string;
+  likeCount?: number;
+  publishedAt?: string;
+}
+
 interface YtCommentThread {
   id: string;
   snippet?: {
     totalReplyCount?: number;
     videoOwnerChannelId?: string;
     topLevelComment?: {
-      snippet?: {
-        authorDisplayName?: string;
-        authorProfileImageUrl?: string;
-        authorChannelId?: { value?: string };
-        textOriginal?: string;
-        textDisplay?: string;
-        likeCount?: number;
-        publishedAt?: string;
-      };
+      id?: string;
+      snippet?: YtCommentSnippet;
     };
   };
   replies?: {
     comments?: Array<{
-      snippet?: {
-        authorChannelId?: { value?: string };
-      };
+      id?: string;
+      snippet?: YtCommentSnippet;
     }>;
+  };
+}
+
+function commentFromSnippet(
+  id: string,
+  snippet: YtCommentSnippet,
+  replyCount: number,
+  authorReplied: boolean
+): Comment {
+  const text = snippet.textOriginal || snippet.textDisplay || "";
+  return {
+    id,
+    author: snippet.authorDisplayName ?? "Anônimo",
+    authorAvatar: snippet.authorProfileImageUrl ?? "",
+    text,
+    likes: snippet.likeCount ?? 0,
+    publishedAt: snippet.publishedAt ?? new Date().toISOString(),
+    replyCount,
+    authorReplied,
+    sentiment: analyzeSentiment(text),
+    isQuestion: isQuestion(text),
   };
 }
 
@@ -183,7 +206,7 @@ export async function fetchComments(
     url.searchParams.set("part", "snippet,replies");
     url.searchParams.set("videoId", videoId);
     url.searchParams.set("maxResults", "100");
-    url.searchParams.set("order", "relevance");
+    url.searchParams.set("order", "time");
     url.searchParams.set("textFormat", "plainText");
     url.searchParams.set("key", key);
     if (pageToken) url.searchParams.set("pageToken", pageToken);
@@ -196,39 +219,45 @@ export async function fetchComments(
     };
 
     for (const thread of data.items ?? []) {
-      const s = thread.snippet?.topLevelComment?.snippet;
-      if (!s) continue;
-      const text = s.textOriginal || s.textDisplay || "";
+      const top = thread.snippet?.topLevelComment;
+      if (!top?.snippet) continue;
+      const replies = thread.replies?.comments ?? [];
       const authorReplied =
-        thread.replies?.comments?.some(
-          (r) => r.snippet?.authorChannelId?.value === ownerId
-        ) ?? false;
+        replies.some((r) => r.snippet?.authorChannelId?.value === ownerId) ?? false;
 
-      comments.push({
-        id: thread.id,
-        author: s.authorDisplayName ?? "Anônimo",
-        authorAvatar: s.authorProfileImageUrl ?? "",
-        text,
-        likes: s.likeCount ?? 0,
-        publishedAt: s.publishedAt ?? new Date().toISOString(),
-        replyCount: thread.snippet?.totalReplyCount ?? 0,
-        authorReplied,
-        sentiment: analyzeSentiment(text),
-        isQuestion: isQuestion(text),
-      });
+      comments.push(
+        commentFromSnippet(
+          thread.id,
+          top.snippet,
+          thread.snippet?.totalReplyCount ?? 0,
+          authorReplied
+        )
+      );
+
+      for (const reply of replies) {
+        if (comments.length >= maxComments) {
+          truncated = true;
+          break;
+        }
+        if (!reply.id || !reply.snippet) continue;
+        comments.push(commentFromSnippet(reply.id, reply.snippet, 0, false));
+      }
 
       if (comments.length >= maxComments) {
-        truncated = Boolean(data.nextPageToken);
+        truncated = true;
         break;
       }
     }
 
     if (!data.nextPageToken || comments.length >= maxComments) {
-      truncated = Boolean(data.nextPageToken) && comments.length >= maxComments;
+      truncated = truncated || Boolean(data.nextPageToken);
       break;
     }
     pageToken = data.nextPageToken;
   }
+
+  const youtubeTotal = meta.video.commentCount || 0;
+  if (youtubeTotal > comments.length) truncated = true;
 
   return {
     video: meta.video,

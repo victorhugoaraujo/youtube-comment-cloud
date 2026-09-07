@@ -98,9 +98,9 @@ export function VideoWorkspace({
     if (!user.limits.aiIdeas) return toast.error("Ideias entram no plano Pro.");
     setBusy("ideas");
     try {
-      const data = await api<{ ideas: VideoIdea[] }>("/api/ideas", {
+      const data = await api<{ ideas: VideoIdea[]; source?: string }>("/api/ideas", {
         method: "POST",
-        body: JSON.stringify({ comments }),
+        body: JSON.stringify({ comments, videoTitle: video?.title }),
       });
       setIdeas(data.ideas);
     } catch (e) {
@@ -223,9 +223,18 @@ export function VideoWorkspace({
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <MessageSquare className="size-4" />
-                  {comments.length} comentários
+                  {comments.length.toLocaleString("pt-BR")} analisados
+                  {video.commentCount > comments.length
+                    ? ` · ${video.commentCount.toLocaleString("pt-BR")} no YouTube`
+                    : " comentários"}
                 </span>
               </div>
+              {video.commentCount > comments.length && (
+                <p className="text-xs text-muted-foreground">
+                  O YouTube soma respostas no total. Puxamos o primeiro nível e as respostas que a
+                  API enviou, até {user.limits.commentsPerVideo.toLocaleString("pt-BR")} no plano.
+                </p>
+              )}
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={runSummary} disabled={busy === "summary"}>
                   <Sparkles className="size-3.5" />
@@ -265,12 +274,22 @@ export function VideoWorkspace({
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">Ideias de próximos vídeos</CardTitle>
+                <p className="text-xs font-normal text-muted-foreground">
+                  Extraídas dos comentários (perguntas e pedidos), não do tema do vídeo atual.
+                </p>
               </CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 {ideas.map((idea) => (
                   <div key={idea.id} className="rounded-lg border p-3">
                     <p className="font-medium">{idea.title}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{idea.reason}</p>
+                    {idea.sampleComments?.length > 0 && (
+                      <ul className="mt-2 space-y-1 border-l-2 border-muted pl-3 text-xs text-muted-foreground">
+                        {idea.sampleComments.slice(0, 3).map((sample, index) => (
+                          <li key={`${idea.id}-${index}`}>“{sample}”</li>
+                        ))}
+                      </ul>
+                    )}
                     <Button
                       size="sm"
                       className="mt-3"
@@ -327,7 +346,7 @@ export function VideoWorkspace({
             </Card>
           )}
 
-          <StatsPanel stats={stats} />
+          <StatsPanel stats={stats} youtubeTotal={video.commentCount} />
           <WordCloud words={words} />
           <FiltersBar filters={filters} onChange={setFilters} resultCount={filtered.length} />
           <CommentsList comments={filtered} />

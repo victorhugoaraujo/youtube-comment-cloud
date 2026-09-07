@@ -1,92 +1,139 @@
 import type { Sentiment } from "@/types";
 
-const POSITIVE_WORDS = [
-  "excelente",
-  "ótimo",
-  "otimo",
-  "incrível",
-  "incrivel",
+function normalize(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+const CREATOR_APPRECIATION = [
+  "aprendi com voce",
+  "aprendi com vocês",
+  "aprendi com seus videos",
+  "aprendi com seus video",
+  "aprendi com o seus videos",
+  "aprendi com os seus videos",
+  "aprendi com seu video",
+  "aprendi com o seu video",
+  "aprendi com seu canal",
+  "seus videos",
+  "seu video me",
+  "voce me ajudou",
+  "voce ajudou",
+  "me ajudou muito",
+  "obrigado pelos videos",
+  "obrigada pelos videos",
+  "valeu pelos videos",
+  "melhor canal",
+  "explica muito bem",
+  "continua assim",
+  "conteudo de qualidade",
+  "mudou minha vida",
+  "voce ensina",
+];
+
+const CREATOR_INSULTS = [
+  "lixo de canal",
+  "canal lixo",
+  "charlatao",
+  "charlatao",
+  "golpista",
+  "cala a boca",
+  "vai trabalhar",
+  "palhaco",
+  "idiota",
+  "imbecil",
+  "otario",
+  "lixo humano",
+];
+
+const POSITIVE_PHRASES = [
+  "aprendi muito",
+  "aprendi pra caramba",
   "amei",
   "adorei",
-  "parabéns",
   "parabens",
   "obrigado",
   "obrigada",
-  "top",
-  "demais",
+  "muito top",
+  "muito bom",
+  "excelente",
+  "incrivel",
   "perfeito",
   "maravilhoso",
-  "fantástico",
-  "fantastico",
-  "melhor",
-  "ajudou",
-  "inspirador",
-  "sucesso",
-  "qualidade",
-  "valeu",
-  "show",
   "sensacional",
-  "genial",
-  "bravo",
-  "love",
+  "show de bola",
+  "valeu demais",
+  "ajudou demais",
+  "conteudo top",
   "great",
-  "awesome",
   "amazing",
+  "awesome",
   "thanks",
-  "thank",
-  "best",
-  "helpful",
-  "incredible",
+  "thank you",
 ];
 
-const NEGATIVE_WORDS = [
-  "ruim",
-  "péssimo",
-  "pessimo",
-  "horrível",
-  "horrivel",
-  "lixo",
-  "odeio",
-  "pior",
-  "decepcionado",
-  "decepcionante",
-  "chato",
-  "enrolação",
-  "enrolacao",
-  "perda de tempo",
-  "nunca mais",
-  "não gostei",
+const NEGATIVE_TOWARD_VIDEO = [
   "nao gostei",
-  "fraco",
-  "boring",
-  "bad",
-  "worst",
-  "hate",
-  "terrible",
-  "awful",
-  "disappointed",
+  "nao gostei do video",
+  "video ruim",
+  "video pessimo",
+  "perda de tempo",
   "clickbait",
   "enganoso",
-  "spam",
+  "nunca mais assisto",
+  "nunca mais vejo",
+  "nunca mais me inscrevo",
+  "decepcionado com o video",
+  "decepcionante",
+  "pior video",
+  "odio desse canal",
+];
+
+const SELF_LESSON = [
+  "quebrando a cara",
+  "quebrei a cara",
+  "nunca mais faco isso",
+  "nunca mais pego",
+  "nunca mais faco",
+  "aprendi da pior forma",
+  "cai nessa",
 ];
 
 export function analyzeSentiment(text: string): Sentiment {
-  const lower = text.toLowerCase();
+  const lower = normalize(text);
 
-  let positiveScore = 0;
-  let negativeScore = 0;
+  const appreciatesCreator = CREATOR_APPRECIATION.some((p) => lower.includes(p));
+  const insultingCreator = CREATOR_INSULTS.some((p) => lower.includes(p));
+  const selfLesson = SELF_LESSON.some((p) => lower.includes(p));
 
-  for (const word of POSITIVE_WORDS) {
-    if (lower.includes(word)) positiveScore++;
+  let positive = 0;
+  let negative = 0;
+
+  for (const phrase of POSITIVE_PHRASES) {
+    if (lower.includes(phrase)) positive += 1;
   }
-
-  for (const word of NEGATIVE_WORDS) {
-    if (lower.includes(word)) negativeScore++;
+  for (const phrase of NEGATIVE_TOWARD_VIDEO) {
+    if (lower.includes(phrase)) negative += 2;
   }
+  if (appreciatesCreator) positive += 2;
+  if (insultingCreator) negative += 3;
+  if (selfLesson && appreciatesCreator) positive += 1;
 
-  if (positiveScore > negativeScore) return "positive";
-  if (negativeScore > positiveScore) return "negative";
+  if (positive > negative) return "positive";
+  if (negative > positive) return "negative";
+  if (appreciatesCreator) return "positive";
   return "neutral";
+}
+
+export function isCreatorHater(text: string): boolean {
+  const lower = normalize(text);
+  if (CREATOR_APPRECIATION.some((p) => lower.includes(p))) return false;
+  if (SELF_LESSON.some((p) => lower.includes(p)) && !CREATOR_INSULTS.some((p) => lower.includes(p))) {
+    return false;
+  }
+  return CREATOR_INSULTS.some((p) => lower.includes(p));
 }
 
 export function sentimentLabel(sentiment: Sentiment): string {

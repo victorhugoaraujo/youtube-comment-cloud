@@ -15,11 +15,14 @@ export async function POST(req: NextRequest) {
     return jsonError("Você usou as 5 gerações de ideias deste mês.", 402);
   }
 
-  const body = (await req.json().catch(() => ({}))) as { comments?: Comment[] };
+  const body = (await req.json().catch(() => ({}))) as {
+    comments?: Comment[];
+    videoTitle?: string;
+  };
   if (!body.comments?.length) return jsonError("Analise um vídeo antes de gerar ideias.");
 
   try {
-    const result = await generateIdeas(body.comments);
+    const result = await generateIdeas(body.comments, body.videoTitle);
     await prisma.user.update({
       where: { id: user.id },
       data: { ideasUsedMonth: { increment: 1 } },

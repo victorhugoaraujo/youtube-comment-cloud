@@ -1,7 +1,7 @@
+import { isCreatorHater } from "@/lib/sentiment";
 import type { Comment } from "@/types";
 
 const SPAM_PATTERNS = [
-  /https?:\/\//i,
   /bit\.ly/i,
   /ganhe dinheiro/i,
   /free followers/i,
@@ -9,19 +9,6 @@ const SPAM_PATTERNS = [
   /telegram\.me/i,
   /whatsapp\.com\/channel/i,
   /(.)\1{6,}/,
-];
-
-const HATER_WORDS = [
-  "lixo",
-  "odeio",
-  "idiota",
-  "burro",
-  "cala a boca",
-  "vai trabalhar",
-  "nunca mais",
-  "hate",
-  "trash",
-  "stupid",
 ];
 
 export function detectSpam(text: string): boolean {
@@ -37,8 +24,7 @@ export function detectSpam(text: string): boolean {
 }
 
 export function detectHater(text: string): boolean {
-  const lower = text.toLowerCase();
-  return HATER_WORDS.some((w) => lower.includes(w));
+  return isCreatorHater(text);
 }
 
 export function annotateComments(comments: Comment[]): Comment[] {
