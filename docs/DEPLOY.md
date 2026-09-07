@@ -11,7 +11,12 @@ A Vercel é serverless: SQLite não persiste. O banco é **Prisma Postgres**, cr
 1. No projeto da Vercel, abra **Storage**.
 2. **Create Database** → **Prisma Postgres** → região próxima (ex. `iad1` / US East) → plano gratuito.
 3. **Connect** no projeto. A Vercel injeta `DATABASE_URL` (`postgres://...`) em Production e Preview.
-4. Não copie a URL para o GitHub. Não precisa colar `DATABASE_URL` à mão se o Connect funcionou.
+4. **Custom Prefix:** deixe **vazio**. Não escreva `STORAGE` — isso criaria `STORAGE_URL` e o Prisma não conecta.
+5. Se aparecer *“This project already has an existing environment variable with name DATABASE_URL”*:
+   1. Cancele o Connect.
+   2. **Settings → Environment Variables** → apague o `DATABASE_URL` antigo (placeholder, SQLite `file:./dev.db`, ou valor vazio).
+   3. Volte em **Storage → Connect**, prefixo vazio, para a Vercel criar o `DATABASE_URL` certo.
+6. Não copie a URL para o GitHub.
 
 O build (`prisma generate && prisma migrate deploy && next build`) cria as tabelas na primeira publicação.
 

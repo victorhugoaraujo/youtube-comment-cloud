@@ -8,7 +8,7 @@ O passo a passo está em [`docs/DEPLOY.md`](docs/DEPLOY.md). Resumo:
 
 1. Envie o código para [github.com/victorhugoaraujo/youtube-comment-cloud](https://github.com/victorhugoaraujo/youtube-comment-cloud) (`git push`).
 2. Importe o repo na [Vercel](https://vercel.com).
-3. No projeto da Vercel: **Storage → Prisma Postgres → Connect** (injeta `DATABASE_URL`).
+3. No projeto da Vercel: **Storage → Prisma Postgres → Connect**, prefixo vazio (injeta `DATABASE_URL`). Se a Vercel reclamar que `DATABASE_URL` já existe, apague a variável antiga em Settings e conecte de novo.
 4. Configure as outras env vars (`AUTH_SECRET`, `APP_URL`, `YOUTUBE_API_KEY`, `OPENAI_API_KEY`).
 
 ## Como rodar
