@@ -2,11 +2,18 @@
 
 Este projeto ainda precisa de um repositório GitHub seu. Depois disso, a Vercel publica o Next.js em cada push.
 
-## 1. Criar o repositório
+## 1. Repositório
 
-No Cursor, clique em **Create repo**. Isso liga este código a um repositório GitHub de verdade.
+Repo: [github.com/victorhugoaraujo/youtube-comment-cloud](https://github.com/victorhugoaraujo/youtube-comment-cloud)
 
-Confirme que `.env` **não** entra no git (já está no `.gitignore`). As chaves da YouTube e da OpenAI ficam só no ambiente local e, depois, no painel da Vercel.
+Se `main` ainda não estiver nesse GitHub, no seu computador (com login no GitHub):
+
+```bash
+git remote add github https://github.com/victorhugoaraujo/youtube-comment-cloud.git
+git push -u github main
+```
+
+O `.env` **não** entra no git. As chaves da YouTube e da OpenAI ficam no ambiente local e no painel da Vercel.
 
 ## 2. Banco na Vercel (obrigatório)
 

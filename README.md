@@ -6,7 +6,7 @@ SaaS para criadores no YouTube: filtrar comentários, nuvem de palavras em lives
 
 O passo a passo está em [`docs/DEPLOY.md`](docs/DEPLOY.md). Resumo:
 
-1. Clique em **Create repo** no Cursor para criar o repositório GitHub.
+1. Envie o código para [github.com/victorhugoaraujo/youtube-comment-cloud](https://github.com/victorhugoaraujo/youtube-comment-cloud) (`git push`).
 2. Importe o repo na [Vercel](https://vercel.com).
 3. Configure as env vars (`AUTH_SECRET`, `APP_URL`, `YOUTUBE_API_KEY`, `OPENAI_API_KEY`).
 4. SQLite não serve na Vercel — precisa de Postgres (Neon/Supabase) para login e histórico persistirem.
