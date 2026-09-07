@@ -148,7 +148,7 @@ src/
 2. **Pagamento**: Stripe adiado. Por agora o plano é ativado na conta, sem cobrança.
 3. **OpenAI**: resumo, clustering de temas e geração de roteiros a partir dos comentários (e do recap de lives)
 4. **YouTube API**: `commentThreads.list` (VOD) e `liveChatMessages.list` (lives, com polling)
-5. **Banco**: Supabase/Postgres para histórico, usuários e snapshots da nuvem de live
+5. **Banco**: Prisma Postgres (Vercel Storage) para usuários, histórico e roteiros
 
 ## Status atual
 

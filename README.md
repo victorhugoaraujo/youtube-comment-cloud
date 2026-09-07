@@ -8,17 +8,18 @@ O passo a passo está em [`docs/DEPLOY.md`](docs/DEPLOY.md). Resumo:
 
 1. Envie o código para [github.com/victorhugoaraujo/youtube-comment-cloud](https://github.com/victorhugoaraujo/youtube-comment-cloud) (`git push`).
 2. Importe o repo na [Vercel](https://vercel.com).
-3. Configure as env vars (`AUTH_SECRET`, `APP_URL`, `YOUTUBE_API_KEY`, `OPENAI_API_KEY`).
-4. SQLite não serve na Vercel — precisa de Postgres (Neon/Supabase) para login e histórico persistirem.
+3. No projeto da Vercel: **Storage → Prisma Postgres → Connect** (injeta `DATABASE_URL`).
+4. Configure as outras env vars (`AUTH_SECRET`, `APP_URL`, `YOUTUBE_API_KEY`, `OPENAI_API_KEY`).
 
 ## Como rodar
 
 ```bash
 cp .env.example .env
-# gere um AUTH_SECRET e, se quiser, preencha as chaves abaixo
+# cole o DATABASE_URL do Prisma Postgres (Vercel Storage → Connect)
+# ou: npx vercel env pull .env.local
 npm install
 npx prisma generate
-npx prisma db push
+npx prisma migrate deploy
 npx prisma db seed
 npm run dev -- -p 4317
 ```
@@ -36,7 +37,7 @@ Todas as rotas estão ligadas. Sem chave, a app **não quebra** — cai em fallb
 
 Stripe está **adiado**. Ativar Pro/Business na conta libera as features sem cobrança. As variáveis `STRIPE_*` no `.env.example` ficam para quando formos ligar o checkout.
 
-Também: `AUTH_SECRET`, `DATABASE_URL` (SQLite por padrão), `APP_URL`.
+Também: `AUTH_SECRET`, `DATABASE_URL` (Prisma Postgres), `APP_URL`.
 
 ## Planos
 
@@ -48,4 +49,4 @@ Detalhes em [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Stack
 
-Next.js 16, TypeScript, Tailwind, shadcn/ui, Prisma/SQLite, YouTube Data API, OpenAI.
+Next.js 16, TypeScript, Tailwind, shadcn/ui, Prisma + Prisma Postgres, YouTube Data API, OpenAI.
