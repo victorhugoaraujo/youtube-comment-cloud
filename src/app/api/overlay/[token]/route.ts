@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getLiveSnapshot } from "@/lib/live-cache";
+import { ensureDatabase } from "@/lib/ensure-database";
 
 export async function GET(
   _req: NextRequest,
   ctx: { params: Promise<{ token: string }> }
 ) {
   const { token } = await ctx.params;
+  await ensureDatabase(prisma);
   const user = await prisma.user.findUnique({
     where: { overlayToken: token },
     select: { plan: true, liveVideoId: true, overlayToken: true },

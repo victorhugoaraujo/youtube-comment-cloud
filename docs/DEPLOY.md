@@ -18,7 +18,9 @@ A Vercel é serverless: SQLite não persiste. O banco é **Prisma Postgres**, cr
    3. Volte em **Storage → Connect**, prefixo vazio, para a Vercel criar o `DATABASE_URL` certo.
 6. Não copie a URL para o GitHub.
 
-O build (`prisma generate && prisma migrate deploy && next build`) cria as tabelas na primeira publicação.
+O build (`node scripts/vercel-build.mjs`) gera o client, aplica as migrations se houver `postgres://`, cria a conta demo e publica o Next.js.
+
+Se o log mostrar `DATABASE_URL resolved to an empty string`, o deploy antigo falhou e o site ainda não tem banco. Apague o `DATABASE_URL` vazio, conecte o Storage de novo e faça Redeploy.
 
 ## 2. Variáveis de ambiente
 

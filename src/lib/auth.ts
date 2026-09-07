@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { currentUsageMonth, isPlanId, type PlanId } from "@/lib/plans";
+import { ensureDatabase } from "@/lib/ensure-database";
 import type { PlanLimits } from "@/lib/plans";
 import { PLAN_LIMITS } from "@/lib/plans";
 
@@ -75,6 +76,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const userId = await readUserIdFromCookie();
   if (!userId) return null;
 
+  await ensureDatabase(prisma);
   let user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return null;
 

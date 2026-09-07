@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createSession, hashPassword, verifyPassword, getCurrentUser, clearSession } from "@/lib/auth";
 import { jsonError } from "@/lib/api";
 import { currentUsageMonth } from "@/lib/plans";
+import { ensureDatabase, prismaFailureMessage } from "@/lib/ensure-database";
 
 const creds = z.object({
   email: z.string().email(),
@@ -17,35 +18,41 @@ export async function POST(req: NextRequest) {
   const body = creds.safeParse(await req.json().catch(() => ({})));
   if (!body.success) return jsonError("Email e senha inválidos.");
 
-  if (action === "register") {
-    const name = body.data.name?.trim() || body.data.email.split("@")[0];
-    const exists = await prisma.user.findUnique({
+  try {
+    await ensureDatabase(prisma);
+
+    if (action === "register") {
+      const name = body.data.name?.trim() || body.data.email.split("@")[0];
+      const exists = await prisma.user.findUnique({
+        where: { email: body.data.email.toLowerCase() },
+      });
+      if (exists) return jsonError("Já existe uma conta com este email.");
+
+      const user = await prisma.user.create({
+        data: {
+          email: body.data.email.toLowerCase(),
+          name,
+          passwordHash: await hashPassword(body.data.password),
+          overlayToken: randomBytes(16).toString("hex"),
+          usageMonth: currentUsageMonth(),
+          plan: "free",
+        },
+      });
+      await createSession(user.id);
+      return NextResponse.json({ ok: true });
+    }
+
+    const user = await prisma.user.findUnique({
       where: { email: body.data.email.toLowerCase() },
     });
-    if (exists) return jsonError("Já existe uma conta com este email.");
-
-    const user = await prisma.user.create({
-      data: {
-        email: body.data.email.toLowerCase(),
-        name,
-        passwordHash: await hashPassword(body.data.password),
-        overlayToken: randomBytes(16).toString("hex"),
-        usageMonth: currentUsageMonth(),
-        plan: "free",
-      },
-    });
+    if (!user || !(await verifyPassword(body.data.password, user.passwordHash))) {
+      return jsonError("Email ou senha incorretos.", 401);
+    }
     await createSession(user.id);
     return NextResponse.json({ ok: true });
+  } catch (error) {
+    return jsonError(prismaFailureMessage(error) ?? "Não foi possível conectar ao banco.", 503);
   }
-
-  const user = await prisma.user.findUnique({
-    where: { email: body.data.email.toLowerCase() },
-  });
-  if (!user || !(await verifyPassword(body.data.password, user.passwordHash))) {
-    return jsonError("Email ou senha incorretos.", 401);
-  }
-  await createSession(user.id);
-  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE() {
@@ -54,7 +61,11 @@ export async function DELETE() {
 }
 
 export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) return jsonError("Não autenticado.", 401);
-  return NextResponse.json({ user });
+  try {
+    const user = await getCurrentUser();
+    if (!user) return jsonError("Não autenticado.", 401);
+    return NextResponse.json({ user });
+  } catch (error) {
+    return jsonError(prismaFailureMessage(error) ?? "Não autenticado.", 401);
+  }
 }

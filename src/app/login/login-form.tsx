@@ -43,7 +43,7 @@ export default function LoginForm() {
       <main className="mx-auto max-w-md px-4 py-16">
         <h1 className="text-2xl font-bold">Entrar</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Demo: demo@commentiq.app / demo12345
+          Demo: demo@commentiq.app / demo12345 — criada automaticamente quando o Prisma Postgres está conectado.
         </p>
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
           <div className="space-y-2">
