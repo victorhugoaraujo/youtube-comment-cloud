@@ -12,6 +12,7 @@ import { FiltersBar } from "@/components/filters-bar";
 import { CommentsList } from "@/components/comments-list";
 import { StatsPanel } from "@/components/stats-panel";
 import { WordCloud } from "@/components/word-cloud";
+import { ScriptDocument } from "@/components/script-document";
 import { DEFAULT_FILTERS, filterComments, computeStats } from "@/lib/filters";
 import { extractWordFrequencies } from "@/lib/word-cloud";
 import { api } from "@/lib/client";
@@ -125,7 +126,7 @@ export function VideoWorkspace({
         body: JSON.stringify({ idea, analysisId }),
       });
       setScript(data.script);
-      toast.success("Roteiro gerado e salvo no calendário.");
+      toast.success("Roteiro completo gerado. Também está em Ideias e roteiros.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha no roteiro");
     } finally {
@@ -322,40 +323,10 @@ export function VideoWorkspace({
           {script && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Roteiro: {script.title}</CardTitle>
+                <CardTitle className="text-sm">Roteiro completo</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <p>
-                  <span className="font-medium">Gancho: </span>
-                  {script.hook}
-                </p>
-                {script.sections.map((s) => (
-                  <div key={s.heading}>
-                    <p className="font-medium">
-                      {s.heading}{" "}
-                      <span className="font-normal text-muted-foreground">{s.duration}</span>
-                    </p>
-                    <ul className="ml-4 list-disc text-muted-foreground">
-                      {s.points.map((p) => (
-                        <li key={p}>{p}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-                <p>
-                  <span className="font-medium">CTA: </span>
-                  {script.cta}
-                </p>
-                {script.variations && (
-                  <div>
-                    <p className="font-medium">Variações</p>
-                    {script.variations.map((v) => (
-                      <p key={v.angle} className="text-muted-foreground">
-                        {v.angle}: {v.title}
-                      </p>
-                    ))}
-                  </div>
-                )}
+              <CardContent>
+                <ScriptDocument script={script} />
               </CardContent>
             </Card>
           )}
