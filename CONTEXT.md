@@ -35,3 +35,27 @@ _Avoid_: sugestão, pauta, tópico
 **Roteiro**:
 O texto completo para o Criador ler na câmera, gerado a partir de uma Ideia (gancho, blocos falados, CTA).
 _Avoid_: outline, pauta, hook sozinho
+
+**Sentimento**:
+A leitura do tom de um Comentário: positivo, negativo, pergunta ou spam. É uma classificação, não um ranking.
+_Avoid_: score, polaridade, mood
+
+**Hater**:
+Selo à parte do Sentimento: o Comentário ataca a *pessoa* do Criador. Pode coexistir com negativo (ou até com outro Sentimento). Reclamação do tema não é Hater.
+_Avoid_: tóxico, hate speech, “mais negativo”
+
+**Plano**:
+O pacote que o Criador escolhe (Free, Pro, Business): o que pode fazer — Lives, quantos Canais, volume. O Criador “está no Pro”.
+_Avoid_: tier, SKU, produto
+
+**Assinatura**:
+O contrato de pagamento daquele Plano (ativa, atrasada, cancelada). Detalhe do Stripe, não o que o Criador “é”.
+_Avoid_: Plano como sinônimo, billing, invoice
+
+**Cota**:
+Unidades da API do YouTube, problema de infra. O Criador não “gasta Cota”.
+_Avoid_: crédito, quota do plano, uso mensal genérico
+
+**Limite**:
+Quantas Análises (e Lives) o Plano deixa no período. É o que o Criador vê: “2 de 10 Análises”.
+_Avoid_: Cota, crédito, quota
