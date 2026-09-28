@@ -13,8 +13,12 @@ Um canal do YouTube que o Criador opera. No Business, vários Canais ainda são 
 _Avoid_: brand, página, property
 
 **Análise**:
-Um snapshot da audiência de um vídeo gravado naquele puxão (comentários ingeridos + leitura daquele momento). Reanalisar o mesmo vídeo depois é outra Análise.
-_Avoid_: Vídeo, relatório, report, recorte
+Um snapshot da audiência de um vídeo **já gravado e publicado** naquele puxão (comentários ingeridos + leitura daquele momento). Reanalisar o mesmo vídeo depois é outra Análise. Não cobre Live.
+_Avoid_: Vídeo, relatório, report, recorte, Análise da live
+
+**Live**:
+Uma transmissão ao vivo cujo chat o Criador acompanha em tempo real (nuvem, sentimento, overlay). Não é Análise: fonte, ritmo e tela são outros.
+_Avoid_: Análise, sessão de Análise, VOD, chat como sinônimo do conceito
 
 **Comentário**:
 Uma mensagem pública ingerida numa Análise — primeiro nível ou resposta. O YouTube conta os dois no total do vídeo.
