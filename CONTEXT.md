@@ -12,13 +12,21 @@ _Avoid_: User, cliente, conta, agência
 Um canal do YouTube que o Criador opera. No Business, vários Canais ainda são do mesmo Criador.
 _Avoid_: brand, página, property
 
+**Vídeo**:
+O vídeo gravado já publicado no YouTube cuja audiência a Análise recorta. O mesmo Vídeo pode ter várias Análises no tempo.
+_Avoid_: Análise, conteúdo, publicação, VOD
+
 **Análise**:
-Um snapshot da audiência de um vídeo **já gravado e publicado** naquele puxão (comentários ingeridos + leitura daquele momento). Reanalisar o mesmo vídeo depois é outra Análise. Não cobre Live.
-_Avoid_: Vídeo, relatório, report, recorte, Análise da live
+Um snapshot da audiência de um **Vídeo** naquele puxão (Comentários ingeridos + leitura daquele momento). Reanalisar o mesmo Vídeo depois é outra Análise. Não cobre Live.
+_Avoid_: Vídeo, relatório, report, recorte, Análise da live, Histórico
 
 **Live**:
-Uma transmissão ao vivo cujo chat o Criador acompanha em tempo real (nuvem, sentimento, overlay). Não é Análise: fonte, ritmo e tela são outros.
-_Avoid_: Análise, sessão de Análise, VOD, chat como sinônimo do conceito
+Uma transmissão ao vivo cujo chat o Criador acompanha em tempo real. Não é Análise: fonte, ritmo e tela são outros. Dela nasce o Overlay.
+_Avoid_: Análise, sessão de Análise, VOD, Overlay como sinônimo, chat como sinônimo do conceito
+
+**Overlay**:
+O recorte da Live que o Criador joga na transmissão (nuvem, leitura do chat) — em geral via OBS. Nasce da Live; não é a Live.
+_Avoid_: widget, browser source, Live, “o OBS”
 
 **Comentário**:
 Uma mensagem pública ingerida numa Análise — primeiro nível ou resposta. O YouTube conta os dois no total do vídeo.
@@ -29,8 +37,8 @@ Um agrupamento de Comentários parecidos com massa (volume ou likes) o bastante 
 _Avoid_: cluster, bucket, tag
 
 **Ideia**:
-Um título de próximo vídeo, nascido de um Tema. Sem Tema não há Ideia.
-_Avoid_: sugestão, pauta, tópico
+Um título de próximo vídeo, nascido de um Tema. Sem Tema não há Ideia. Agendar no tempo continua sendo Ideia, não “um Calendário”.
+_Avoid_: sugestão, pauta, tópico, Calendário
 
 **Roteiro**:
 O texto completo para o Criador ler na câmera, gerado a partir de uma Ideia (gancho, blocos falados, CTA).
@@ -59,3 +67,11 @@ _Avoid_: crédito, quota do plano, uso mensal genérico
 **Limite**:
 Quantas Análises (e Lives) o Plano deixa no período. É o que o Criador vê: “2 de 10 Análises”.
 _Avoid_: Cota, crédito, quota
+
+## Not concepts
+
+These are screens or actions, not nouns in the domain:
+
+- **Histórico** — lista de Análises
+- **Comparação** — duas Análises lado a lado
+- **Calendário** — Ideias colocadas no tempo
