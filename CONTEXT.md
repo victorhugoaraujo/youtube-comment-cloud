@@ -1,6 +1,8 @@
 # CommentIQ
 
-CommentIQ is the domain of a YouTube creator looking at *their own* audience so they can decide what to publish next. It is not a catalog of YouTube videos and not an agency desk.
+CommentIQ is the domain of a YouTube creator looking at *their own* audience so they can decide what to publish next. The core is **Análise of a recorded Vídeo** (Comentários → Temas → Ideias → Roteiro). It is not a catalog of YouTube videos, not an agency desk, and not a live-studio product.
+
+Live (and Overlay) exist in the product but are **out of the current domain focus** — scale later; do not grow Chat/Nuvem language until then.
 
 ## Language
 
@@ -21,12 +23,12 @@ Um snapshot da audiência de um **Vídeo** naquele puxão (Comentários ingerido
 _Avoid_: Vídeo, relatório, report, recorte, Análise da live, Histórico
 
 **Live**:
-Uma transmissão ao vivo cujo chat o Criador acompanha em tempo real. Não é Análise: fonte, ritmo e tela são outros. Dela nasce o Overlay.
-_Avoid_: Análise, sessão de Análise, VOD, Overlay como sinônimo, chat como sinônimo do conceito
+Uma transmissão ao vivo cujo chat o Criador acompanha em tempo real. Não é Análise. **Fora do núcleo** — existe no produto; não modelar nem escalar agora.
+_Avoid_: Análise, sessão de Análise, VOD, Overlay como sinônimo, Chat como conceito
 
 **Overlay**:
-O recorte da Live que o Criador joga na transmissão (nuvem, leitura do chat) — em geral via OBS. Nasce da Live; não é a Live.
-_Avoid_: widget, browser source, Live, “o OBS”
+O recorte da Live que o Criador joga na transmissão. Nasce da Live; não é a Live. Mesmo status: existe, não é o foco.
+_Avoid_: widget, browser source, Live, “o OBS”, Nuvem como entidade
 
 **Comentário**:
 Uma mensagem pública ingerida numa Análise — primeiro nível ou resposta. O YouTube conta os dois no total do vídeo.
@@ -75,3 +77,9 @@ These are screens or actions, not nouns in the domain:
 - **Histórico** — lista de Análises
 - **Comparação** — duas Análises lado a lado
 - **Calendário** — Ideias colocadas no tempo
+- **Chat / Nuvem** — detalhe de Live; não nomear até a Live ser o foco
+
+## Invariants
+
+- The unit of work is an **Análise** of one **Vídeo**, not a Live session.
+- Theme → idea → script only from **Comentários** of an Análise, never from Live chat, until Live is explicitly scaled.
