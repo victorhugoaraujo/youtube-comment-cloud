@@ -10,7 +10,7 @@ YouTube treats a Short as a video. CommentIQ’s job is deciding what long-form 
 
 ## Decision
 
-A Short is not a Vídeo in this domain. There is no Análise of Shorts. Ingest and UI reject Short URLs the same way they reject third-party URLs and Live.
+A Short is not a **Vídeo alvo**. There is no Análise of Shorts. Ingest and UI reject Short URLs the same way they reject Live — not because of who owns the video.
 
 ## Consequences
 

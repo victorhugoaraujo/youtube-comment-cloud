@@ -1,4 +1,4 @@
-export type Sentiment = "positive" | "negative" | "neutral";
+export type Sentiment = "positive" | "negative" | "question" | "spam";
 
 export type SortOption = "likes" | "date" | "replies";
 

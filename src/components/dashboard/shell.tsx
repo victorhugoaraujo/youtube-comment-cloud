@@ -14,11 +14,12 @@ import {
   Settings,
   Sparkles,
   Tv,
+  Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { PLAN_LABEL, type PlanId } from "@/lib/plans";
+import { PLAN_LABEL, hasMinPlan, type PlanId } from "@/lib/plans";
 import type { SessionUser } from "@/lib/auth";
 
 const NAV = [
@@ -27,6 +28,7 @@ const NAV = [
   { href: "/dashboard/history", label: "Histórico", icon: History, min: "pro" as const },
   { href: "/dashboard/ideas", label: "Ideias e roteiros", icon: Sparkles, min: "pro" as const },
   { href: "/dashboard/calendar", label: "Calendário", icon: CalendarRange, min: "business" as const },
+  { href: "/dashboard/membros", label: "Membros", icon: Users, min: "business" as const, criadorOnly: true },
   { href: "/dashboard/channels", label: "Canais", icon: Tv, min: "business" as const },
   { href: "/dashboard/compare", label: "Comparar", icon: GitCompare, min: "business" as const },
   { href: "/dashboard/account", label: "Conta", icon: Settings },
@@ -63,7 +65,11 @@ export function DashboardShell({
           </div>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
-          {NAV.map((item) => {
+          {NAV.filter(
+            (item) =>
+              (!item.min || hasMinPlan(user.plan, item.min)) &&
+              (!("criadorOnly" in item && item.criadorOnly) || user.role === "criador"),
+          ).map((item) => {
             const active =
               item.href === "/dashboard"
                 ? pathname === "/dashboard"
@@ -106,7 +112,11 @@ export function DashboardShell({
           </Link>
         </header>
         <div className="flex gap-1 overflow-x-auto border-b px-2 py-2 md:hidden">
-          {NAV.map((item) => (
+          {NAV.filter(
+            (item) =>
+              (!item.min || hasMinPlan(user.plan, item.min)) &&
+              (!("criadorOnly" in item && item.criadorOnly) || user.role === "criador"),
+          ).map((item) => (
             <Link
               key={item.href}
               href={item.href}

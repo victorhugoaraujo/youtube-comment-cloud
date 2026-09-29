@@ -1,3 +1,5 @@
+# Análise de Vídeo alvo público: contrato do núcleo
+
 ## Problem Statement
 
 O Criador cola a URL de um vídeo para juntar comentários, ver o que dá para aproveitar e sair com ideias e roteiros para os próximos vídeos. Hoje o produto quase faz isso, mas o contrato está errado em pontos que já doeram na prática: o Total de comentários do YouTube não aparece ao lado dos Comentários ingeridos; URL de Short ainda é tratada como Vídeo alvo; reanalisar não está explícito como nova Análise no Limite; Canal e “é meu vídeo” foram um beco sem saída; Business ainda vende canais/overlay em vez de Membros; e quem dispara a Análise não pode ser um Membro gastando o Limite do Criador.

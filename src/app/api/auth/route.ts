@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createSession, hashPassword, verifyPassword, getCurrentUser, clearSession } from "@/lib/auth";
 import { jsonError } from "@/lib/api";
 import { currentUsageMonth } from "@/lib/plans";
+import { attachInviteOnRegister } from "@/lib/members";
 import { ensureDatabase, prismaFailureMessage } from "@/lib/ensure-database";
 
 const creds = z.object({
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
         },
       });
       await createSession(user.id);
+      await attachInviteOnRegister(user.id, user.email);
       return NextResponse.json({ ok: true });
     }
 

@@ -75,9 +75,9 @@ export default function ComparePage() {
               <p className="font-semibold">{r.videoTitle}</p>
               <p className="text-sm text-muted-foreground">{r.commentCount} comentários</p>
               <p className="mt-2 text-sm">
-                +{r.stats.sentimentBreakdown.positive} / −
-                {r.stats.sentimentBreakdown.negative} / ~
-                {r.stats.sentimentBreakdown.neutral}
+                +{r.stats.sentimentBreakdown.positive ?? 0} / −
+                {r.stats.sentimentBreakdown.negative ?? 0} / ?
+                {r.stats.sentimentBreakdown.question ?? 0}
               </p>
             </div>
           ))}

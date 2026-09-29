@@ -1,4 +1,6 @@
-import type { Sentiment } from "@/types";
+import type { Comment, Sentiment } from "@/types";
+
+export type Tone = "positive" | "negative" | "neutral";
 
 function normalize(text: string): string {
   return text
@@ -101,7 +103,7 @@ const SELF_LESSON = [
   "cai nessa",
 ];
 
-export function analyzeSentiment(text: string): Sentiment {
+export function analyzeSentiment(text: string): Tone {
   const lower = normalize(text);
 
   const appreciatesCreator = CREATOR_APPRECIATION.some((p) => lower.includes(p));
@@ -136,13 +138,27 @@ export function isCreatorHater(text: string): boolean {
   return CREATOR_INSULTS.some((p) => lower.includes(p));
 }
 
+export function applyGlossarySentiment(comments: Comment[]): Comment[] {
+  return comments.map((comment) => {
+    const isSpam = Boolean(comment.isSpam);
+    const isQuestion = Boolean(comment.isQuestion);
+    let sentiment: Sentiment = "positive";
+    if (isSpam) sentiment = "spam";
+    else if (isQuestion) sentiment = "question";
+    else if (comment.sentiment === "negative") sentiment = "negative";
+    return { ...comment, isSpam, isQuestion, sentiment };
+  });
+}
+
 export function sentimentLabel(sentiment: Sentiment): string {
   switch (sentiment) {
     case "positive":
       return "Positivo";
     case "negative":
       return "Negativo";
-    case "neutral":
-      return "Neutro";
+    case "question":
+      return "Pergunta";
+    case "spam":
+      return "Spam";
   }
 }

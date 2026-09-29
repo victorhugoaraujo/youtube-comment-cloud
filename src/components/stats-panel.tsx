@@ -5,7 +5,8 @@ import {
   Reply,
   TrendingUp,
   TrendingDown,
-  Minus,
+  HelpCircle,
+  Ban,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -14,13 +15,13 @@ import type { CommentStats } from "@/types";
 interface StatsPanelProps {
   stats: CommentStats;
   youtubeTotal?: number;
+  ingestedCount?: number;
 }
 
-export function StatsPanel({ stats, youtubeTotal }: StatsPanelProps) {
+export function StatsPanel({ stats, youtubeTotal, ingestedCount }: StatsPanelProps) {
   const total = stats.filtered || 1;
-  const positivePct = Math.round((stats.sentimentBreakdown.positive / total) * 100);
-  const negativePct = Math.round((stats.sentimentBreakdown.negative / total) * 100);
-  const neutralPct = Math.round((stats.sentimentBreakdown.neutral / total) * 100);
+  const pct = (n: number) => Math.round((n / total) * 100);
+  const ingested = ingestedCount ?? stats.total;
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -32,11 +33,12 @@ export function StatsPanel({ stats, youtubeTotal }: StatsPanelProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-bold">{stats.filtered.toLocaleString("pt-BR")}</p>
+          <p className="text-2xl font-bold">{ingested.toLocaleString("pt-BR")}</p>
           <p className="text-xs text-muted-foreground">
-            {youtubeTotal && youtubeTotal > stats.total
-              ? `${stats.total.toLocaleString("pt-BR")} analisados · ${youtubeTotal.toLocaleString("pt-BR")} no YouTube`
-              : `de ${stats.total.toLocaleString("pt-BR")} analisados`}
+            nesta Análise
+            {typeof youtubeTotal === "number"
+              ? ` · ${youtubeTotal.toLocaleString("pt-BR")} no YouTube`
+              : ""}
           </p>
         </CardContent>
       </Card>
@@ -84,47 +86,30 @@ export function StatsPanel({ stats, youtubeTotal }: StatsPanelProps) {
 
       <Card className="sm:col-span-2 lg:col-span-4">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Distribuição de sentimento</CardTitle>
+          <CardTitle className="text-sm font-medium">Sentimento</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                <TrendingUp className="size-4" />
-                Positivo
-              </span>
-              <span className="font-medium">
-                {stats.sentimentBreakdown.positive} ({positivePct}%)
-              </span>
+          {(
+            [
+              ["positive", "Positivo", "text-emerald-600 dark:text-emerald-400", "[&>div]:bg-emerald-500", TrendingUp],
+              ["negative", "Negativo", "text-red-600 dark:text-red-400", "[&>div]:bg-red-500", TrendingDown],
+              ["question", "Pergunta", "text-sky-600 dark:text-sky-400", "[&>div]:bg-sky-500", HelpCircle],
+              ["spam", "Spam", "text-zinc-500", "[&>div]:bg-zinc-400", Ban],
+            ] as const
+          ).map(([key, label, color, bar, Icon]) => (
+            <div key={key} className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className={`inline-flex items-center gap-1.5 ${color}`}>
+                  <Icon className="size-4" />
+                  {label}
+                </span>
+                <span className="font-medium">
+                  {stats.sentimentBreakdown[key]} ({pct(stats.sentimentBreakdown[key])}%)
+                </span>
+              </div>
+              <Progress value={pct(stats.sentimentBreakdown[key])} className={`h-2 ${bar}`} />
             </div>
-            <Progress value={positivePct} className="h-2 [&>div]:bg-emerald-500" />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400">
-                <TrendingDown className="size-4" />
-                Negativo
-              </span>
-              <span className="font-medium">
-                {stats.sentimentBreakdown.negative} ({negativePct}%)
-              </span>
-            </div>
-            <Progress value={negativePct} className="h-2 [&>div]:bg-red-500" />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="inline-flex items-center gap-1.5 text-zinc-500">
-                <Minus className="size-4" />
-                Neutro
-              </span>
-              <span className="font-medium">
-                {stats.sentimentBreakdown.neutral} ({neutralPct}%)
-              </span>
-            </div>
-            <Progress value={neutralPct} className="h-2 [&>div]:bg-zinc-400" />
-          </div>
+          ))}
         </CardContent>
       </Card>
     </div>

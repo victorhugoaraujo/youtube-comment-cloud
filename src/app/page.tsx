@@ -91,9 +91,9 @@ export default function LandingPage() {
           <h2 className="text-2xl font-bold">Três planos. Do canal pequeno ao studio.</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {[
-              { name: "Free", price: "R$ 0", items: ["5 vídeos/mês", "500 comentários", "Filtros e nuvem VOD"] },
-              { name: "Pro", price: "R$ 29/mês", items: ["Lives + recap", "Resumo e roteiros AI", "Exportar CSV/PDF"] },
-              { name: "Business", price: "R$ 79/mês", items: ["Overlay OBS", "Até 10 canais", "Calendário e comparação"] },
+              { name: "Free", price: "R$ 0", items: ["5 Análises/mês", "500 comentários", "Sentimento e Hater"] },
+              { name: "Pro", price: "R$ 29/mês", items: ["Análises ilimitadas", "Ideias e 5 roteiros/mês", "Exportar CSV/PDF"] },
+              { name: "Business", price: "R$ 79/mês", items: ["Membros no mesmo Limite", "Ideias e roteiros ilimitados", "Histórico completo"] },
             ].map((p) => (
               <div key={p.name} className="rounded-xl border bg-card p-6">
                 <p className="text-sm text-muted-foreground">{p.name}</p>

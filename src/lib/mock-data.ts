@@ -417,7 +417,7 @@ const RAW_COMMENTS: Omit<Comment, "sentiment">[] = [
 
 export const MOCK_COMMENTS: Comment[] = RAW_COMMENTS.map((c) => ({
   ...c,
-  sentiment: analyzeSentiment(c.text),
+  sentiment: analyzeSentiment(c.text) === "negative" ? "negative" : "positive",
 }));
 
 export function fetchMockComments(): Promise<{ video: VideoInfo; comments: Comment[] }> {
