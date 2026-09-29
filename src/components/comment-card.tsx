@@ -10,7 +10,8 @@ interface CommentCardProps {
 const SENTIMENT_STYLES = {
   positive: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   negative: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
-  neutral: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+  question: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
+  spam: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
 } as const;
 
 function formatDate(iso: string): string {
@@ -54,7 +55,7 @@ export function CommentCard({ comment }: CommentCardProps) {
               Top
             </Badge>
           )}
-          {comment.isSpam && (
+          {comment.isSpam && comment.sentiment !== "spam" && (
             <Badge variant="destructive" className="text-[10px]">
               Spam
             </Badge>

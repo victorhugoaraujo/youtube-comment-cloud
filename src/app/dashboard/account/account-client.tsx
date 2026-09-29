@@ -38,8 +38,9 @@ export function AccountClient({ user }: { user: SessionUser }) {
         Plano atual: <Badge>{PLAN_LABEL[user.plan]}</Badge>
       </p>
       <p className="text-sm text-muted-foreground">
-        Uso no mês: {user.videosUsedMonth} vídeos · {user.ideasUsedMonth} ideias ·{" "}
-        {user.scriptsUsedMonth} roteiros
+        Uso no mês: {user.videosUsedMonth} Análises · {user.ideasUsedMonth} Ideias ·{" "}
+        {user.scriptsUsedMonth} Roteiros
+        {user.role === "membro" ? " (Limite do Criador)" : ""}
       </p>
       {user.limits.overlay && (
         <p className="break-all text-sm">
@@ -49,23 +50,30 @@ export function AccountClient({ user }: { user: SessionUser }) {
           </a>
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
-        <Button disabled={busy} onClick={() => upgrade("pro")}>
-          Ativar Pro
-        </Button>
-        <Button disabled={busy} variant="outline" onClick={() => upgrade("business")}>
-          Ativar Business
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={async () => {
-            await fetch("/api/auth", { method: "DELETE" });
-            router.push("/");
-          }}
-        >
-          Sair
-        </Button>
-      </div>
+      {user.role === "criador" && (
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={busy} onClick={() => upgrade("pro")}>
+            Ativar Pro
+          </Button>
+          <Button disabled={busy} variant="outline" onClick={() => upgrade("business")}>
+            Ativar Business
+          </Button>
+        </div>
+      )}
+      {user.role === "membro" && (
+        <p className="text-sm text-muted-foreground">
+          Você é Membro. Só o Criador altera Plano e Assinatura.
+        </p>
+      )}
+      <Button
+        variant="ghost"
+        onClick={async () => {
+          await fetch("/api/auth", { method: "DELETE" });
+          router.push("/");
+        }}
+      >
+        Sair
+      </Button>
     </div>
   );
 }

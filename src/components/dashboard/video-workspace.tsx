@@ -37,6 +37,9 @@ export function VideoWorkspace({
   const [summary, setSummary] = useState<string | null>(null);
   const [ideas, setIdeas] = useState<VideoIdea[]>([]);
   const [script, setScript] = useState<VideoScript | null>(null);
+  const [ingestedCount, setIngestedCount] = useState(0);
+  const [youtubeCommentTotal, setYoutubeCommentTotal] = useState(0);
+  const [analisesUsedMonth, setAnalisesUsedMonth] = useState(user.videosUsedMonth);
   const [busy, setBusy] = useState<string | null>(null);
 
   const filtered = useMemo(() => filterComments(comments, filters), [comments, filters]);
@@ -55,21 +58,29 @@ export function VideoWorkspace({
         comments: Comment[];
         source: "youtube" | "demo";
         truncated?: boolean;
+        youtubeCommentTotal?: number;
+        ingestedCount?: number;
+        analisesUsedMonth?: number;
       }>("/api/comments", { method: "POST", body: JSON.stringify({ url }) });
       setAnalysisId(data.analysisId);
       setVideo(data.video);
       setComments(data.comments);
       setSource(data.source);
+      setIngestedCount(data.ingestedCount ?? data.comments.length);
+      setYoutubeCommentTotal(data.youtubeCommentTotal ?? data.video.commentCount);
+      setAnalisesUsedMonth(data.analisesUsedMonth ?? user.videosUsedMonth + 1);
       setFilters(DEFAULT_FILTERS);
       if (data.source === "demo") {
-        toast.message("YouTube API sem chave na Vercel — usando comentários de demonstração.");
+        toast.message("YouTube API sem chave — usando comentários de demonstração, não reais.");
       } else if (data.comments.length === 0) {
         toast.message("Vídeo encontrado, mas não há comentários públicos.");
       } else {
+        const ingested = data.ingestedCount ?? data.comments.length;
+        const total = data.youtubeCommentTotal ?? data.video.commentCount;
         toast.success(
-          data.truncated
-            ? `Comentários reais carregados (limite do plano: ${data.comments.length}).`
-            : `${data.comments.length} comentários reais de “${data.video.title}”.`,
+          data.truncated || total > ingested
+            ? `Análise pronta: ${ingested.toLocaleString("pt-BR")} Comentários ingeridos de ${total.toLocaleString("pt-BR")} no YouTube.`
+            : `${ingested.toLocaleString("pt-BR")} Comentários de “${data.video.title}”.`,
         );
       }
     } catch (e) {
@@ -181,12 +192,8 @@ export function VideoWorkspace({
 
       {youtubeReady && (
         <div className="rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
-          YouTube API ligada. Cole qualquer vídeo público — Shorts, lives gravadas ou VOD. Lives
-          ao vivo com chat ficam em{" "}
-          <Link href="/dashboard/live" className="underline">
-            Nuvem da live
-          </Link>
-          .
+          YouTube API ligada. Cole a URL pública de um vídeo longo. Short e Live não entram nesta
+          Análise.
         </div>
       )}
 
@@ -216,9 +223,9 @@ export function VideoWorkspace({
             <div className="flex flex-1 flex-col justify-center gap-2">
               <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary">{source === "youtube" ? "YouTube API" : "Demo"}</Badge>
-                {user.plan === "free" && (
+                {user.plan === "free" && user.limits.videosPerMonth !== null && (
                   <Badge variant="outline">
-                    {user.videosUsedMonth + 1}/{user.limits.videosPerMonth} vídeos no mês
+                    {analisesUsedMonth}/{user.limits.videosPerMonth} Análises no mês
                   </Badge>
                 )}
               </div>
@@ -231,16 +238,17 @@ export function VideoWorkspace({
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <MessageSquare className="size-4" />
-                  {comments.length.toLocaleString("pt-BR")} analisados
-                  {video.commentCount > comments.length
-                    ? ` · ${video.commentCount.toLocaleString("pt-BR")} no YouTube`
-                    : " comentários"}
+                  {ingestedCount.toLocaleString("pt-BR")} Comentários nesta Análise
+                  {source === "youtube"
+                    ? ` · ${youtubeCommentTotal.toLocaleString("pt-BR")} no YouTube`
+                    : " · demonstração (não são Comentários reais do YouTube)"}
                 </span>
               </div>
-              {video.commentCount > comments.length && (
+              {source === "youtube" && youtubeCommentTotal !== ingestedCount && (
                 <p className="text-xs text-muted-foreground">
-                  O YouTube soma respostas no total. Puxamos o primeiro nível e as respostas que a
-                  API enviou, até {user.limits.commentsPerVideo.toLocaleString("pt-BR")} no plano.
+                  O Total de comentários é o número do YouTube. Esta Análise ingeriu o que a API
+                  entregou neste puxão, até {user.limits.commentsPerVideo.toLocaleString("pt-BR")} no
+                  plano.
                 </p>
               )}
               <div className="flex flex-wrap gap-2 pt-2">
@@ -331,7 +339,11 @@ export function VideoWorkspace({
             </Card>
           )}
 
-          <StatsPanel stats={stats} youtubeTotal={video.commentCount} />
+          <StatsPanel
+            stats={stats}
+            youtubeTotal={youtubeCommentTotal}
+            ingestedCount={ingestedCount}
+          />
           <WordCloud words={words} />
           <FiltersBar filters={filters} onChange={setFilters} resultCount={filtered.length} />
           <CommentsList comments={filtered} />

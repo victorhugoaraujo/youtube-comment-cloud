@@ -57,7 +57,8 @@ export function FiltersBar({ filters, onChange, resultCount }: FiltersBarProps) 
             <SelectItem value="all">Todos os sentimentos</SelectItem>
             <SelectItem value="positive">Positivo</SelectItem>
             <SelectItem value="negative">Negativo</SelectItem>
-            <SelectItem value="neutral">Neutro</SelectItem>
+            <SelectItem value="question">Pergunta</SelectItem>
+            <SelectItem value="spam">Spam</SelectItem>
           </SelectContent>
         </Select>
 

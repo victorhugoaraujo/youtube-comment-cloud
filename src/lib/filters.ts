@@ -98,7 +98,8 @@ export function computeStats(
   const sentimentBreakdown = {
     positive: filtered.filter((c) => c.sentiment === "positive").length,
     negative: filtered.filter((c) => c.sentiment === "negative").length,
-    neutral: filtered.filter((c) => c.sentiment === "neutral").length,
+    question: filtered.filter((c) => c.sentiment === "question").length,
+    spam: filtered.filter((c) => c.sentiment === "spam").length,
   };
 
   return {

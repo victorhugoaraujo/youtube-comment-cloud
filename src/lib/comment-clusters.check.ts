@@ -15,7 +15,7 @@ function fake(id: string, text: string, likes = 0): Comment {
     publishedAt: new Date().toISOString(),
     replyCount: 0,
     authorReplied: false,
-    sentiment: "neutral",
+    sentiment: "positive",
   };
 }
 

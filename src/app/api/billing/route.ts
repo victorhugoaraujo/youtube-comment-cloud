@@ -3,10 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { jsonError, withUser } from "@/lib/api";
 import { createCheckoutSession, createPortalSession, getStripe } from "@/lib/stripe";
 import { isPlanId, type PlanId, type PlanInterval } from "@/lib/plans";
+import { assertCanManageBilling } from "@/lib/access";
+import { AnaliseHttpError } from "@/lib/video-alvo";
 
 export async function POST(req: NextRequest) {
   const { user, error } = await withUser();
   if (error) return error;
+  try {
+    assertCanManageBilling(user);
+  } catch (err) {
+    if (err instanceof AnaliseHttpError) return jsonError(err.message, err.status);
+    throw err;
+  }
 
   const body = (await req.json().catch(() => ({}))) as {
     action?: "checkout" | "portal" | "dev-upgrade";

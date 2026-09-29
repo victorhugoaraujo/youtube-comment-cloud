@@ -10,6 +10,9 @@ interface Item {
   videoTitle: string;
   channelName: string;
   commentCount: number;
+  youtubeCommentTotal?: number;
+  ingestedCount?: number;
+  source?: string;
   createdAt: string;
   kind: string;
 }
@@ -53,7 +56,11 @@ export default function HistoryPage() {
             <div>
               <p className="font-medium">{i.videoTitle}</p>
               <p className="text-xs text-muted-foreground">
-                {i.channelName} · {i.commentCount} comentários ·{" "}
+                {i.channelName} · {i.ingestedCount ?? i.commentCount} nesta Análise
+                {i.source === "demo"
+                  ? " · demonstração"
+                  : ` · ${(i.youtubeCommentTotal ?? i.commentCount).toLocaleString("pt-BR")} no YouTube`}{" "}
+                ·{" "}
                 {new Date(i.createdAt).toLocaleString("pt-BR")}
               </p>
             </div>

@@ -7,7 +7,7 @@ export async function GET() {
   const { user, error } = await withUser();
   if (error) return error;
   const scripts = await prisma.script.findMany({
-    where: { userId: user.id },
+    where: { userId: user.billingOwnerId },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
@@ -39,12 +39,12 @@ export async function POST(req: NextRequest) {
   try {
     const result = await generateScript(body.idea, user.limits.scriptVariations);
     await prisma.user.update({
-      where: { id: user.id },
+      where: { id: user.billingOwnerId },
       data: { scriptsUsedMonth: { increment: 1 } },
     });
     const saved = await prisma.script.create({
       data: {
-        userId: user.id,
+        userId: user.billingOwnerId,
         analysisId: body.analysisId,
         ideaTitle: body.idea.title,
         title: result.script.title,

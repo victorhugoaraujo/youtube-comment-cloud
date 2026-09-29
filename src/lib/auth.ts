@@ -28,6 +28,8 @@ export interface SessionUser {
   scriptsUsedMonth: number;
   usageMonth: string;
   limits: PlanLimits;
+  role: "criador" | "membro";
+  billingOwnerId: string;
 }
 
 export async function hashPassword(password: string) {
@@ -72,42 +74,61 @@ export async function readUserIdFromCookie(): Promise<string | null> {
   }
 }
 
+async function resetMonthIfNeeded(user: {
+  id: string;
+  usageMonth: string;
+  videosUsedMonth: number;
+  ideasUsedMonth: number;
+  scriptsUsedMonth: number;
+  plan: string;
+  planInterval: string | null;
+  overlayToken: string;
+  liveVideoId: string | null;
+}) {
+  const month = currentUsageMonth();
+  if (user.usageMonth === month) return user;
+  return prisma.user.update({
+    where: { id: user.id },
+    data: {
+      usageMonth: month,
+      videosUsedMonth: 0,
+      ideasUsedMonth: 0,
+      scriptsUsedMonth: 0,
+    },
+  });
+}
+
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const userId = await readUserIdFromCookie();
   if (!userId) return null;
 
   await ensureDatabase(prisma);
-  let user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return null;
+  const actor = await prisma.user.findUnique({ where: { id: userId } });
+  if (!actor) return null;
 
-  const month = currentUsageMonth();
-  if (user.usageMonth !== month) {
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        usageMonth: month,
-        videosUsedMonth: 0,
-        ideasUsedMonth: 0,
-        scriptsUsedMonth: 0,
-      },
-    });
-  }
+  const billing = actor.ownerUserId
+    ? await prisma.user.findUnique({ where: { id: actor.ownerUserId } })
+    : actor;
+  if (!billing) return null;
 
-  const plan: PlanId = isPlanId(user.plan) ? user.plan : "free";
+  const billed = await resetMonthIfNeeded(billing);
+  const plan: PlanId = isPlanId(billed.plan) ? billed.plan : "free";
 
   return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
+    id: actor.id,
+    email: actor.email,
+    name: actor.name,
     plan,
-    planInterval: user.planInterval,
-    overlayToken: user.overlayToken,
-    liveVideoId: user.liveVideoId,
-    videosUsedMonth: user.videosUsedMonth,
-    ideasUsedMonth: user.ideasUsedMonth,
-    scriptsUsedMonth: user.scriptsUsedMonth,
-    usageMonth: user.usageMonth,
+    planInterval: billed.planInterval,
+    overlayToken: billed.overlayToken,
+    liveVideoId: billed.liveVideoId,
+    videosUsedMonth: billed.videosUsedMonth,
+    ideasUsedMonth: billed.ideasUsedMonth,
+    scriptsUsedMonth: billed.scriptsUsedMonth,
+    usageMonth: billed.usageMonth,
     limits: PLAN_LIMITS[plan],
+    role: actor.ownerUserId ? "membro" : "criador",
+    billingOwnerId: billed.id,
   };
 }
 

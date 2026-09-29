@@ -68,9 +68,11 @@ interface YtVideo {
     thumbnails?: { high?: { url?: string }; medium?: { url?: string } };
   };
   statistics?: { commentCount?: string; viewCount?: string };
+  contentDetails?: { duration?: string };
   liveStreamingDetails?: {
     activeLiveChatId?: string;
     actualStartTime?: string;
+    actualEndTime?: string;
     concurrentViewers?: string;
   };
 }
@@ -119,7 +121,7 @@ function commentFromSnippet(
     publishedAt: snippet.publishedAt ?? new Date().toISOString(),
     replyCount,
     authorReplied,
-    sentiment: analyzeSentiment(text),
+    sentiment: analyzeSentiment(text) === "negative" ? "negative" : "positive",
     isQuestion: isQuestion(text),
   };
 }
@@ -129,12 +131,16 @@ export interface FetchedComments {
   comments: Comment[];
   source: "youtube" | "demo";
   truncated: boolean;
+  duration?: string | null;
+  liveEnded?: boolean;
 }
 
 export async function fetchVideoMeta(videoId: string): Promise<{
   video: FetchedComments["video"];
   raw: YtVideo | null;
   source: "youtube" | "demo";
+  duration?: string | null;
+  liveEnded?: boolean;
 }> {
   const key = process.env.YOUTUBE_API_KEY;
   if (!key) {
@@ -146,7 +152,7 @@ export async function fetchVideoMeta(videoId: string): Promise<{
   }
 
   const url = new URL(`${YT}/videos`);
-  url.searchParams.set("part", "snippet,statistics,liveStreamingDetails");
+  url.searchParams.set("part", "snippet,statistics,liveStreamingDetails,contentDetails");
   url.searchParams.set("id", videoId);
   url.searchParams.set("key", key);
 
@@ -176,6 +182,8 @@ export async function fetchVideoMeta(videoId: string): Promise<{
       channelId: item.snippet?.channelId,
       liveChatId: item.liveStreamingDetails?.activeLiveChatId ?? null,
     },
+    duration: item.contentDetails?.duration ?? null,
+    liveEnded: Boolean(item.liveStreamingDetails?.actualEndTime),
   };
 }
 
@@ -193,6 +201,8 @@ export async function fetchComments(
       comments,
       source: "demo",
       truncated: false,
+      duration: null,
+      liveEnded: true,
     };
   }
 
@@ -264,6 +274,8 @@ export async function fetchComments(
     comments: markTopComments(annotateComments(comments)),
     source: "youtube",
     truncated,
+    duration: meta.duration,
+    liveEnded: meta.liveEnded,
   };
 }
 

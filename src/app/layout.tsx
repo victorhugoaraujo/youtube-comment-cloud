@@ -19,7 +19,11 @@ export const metadata: Metadata = {
     "Filtre, analise e entenda os comentários dos seus vídeos do YouTube com sentimento, palavras-chave e estatísticas.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="pt-BR"

@@ -1,4 +1,4 @@
-import { isCreatorHater } from "@/lib/sentiment";
+import { applyGlossarySentiment, isCreatorHater } from "@/lib/sentiment";
 import type { Comment } from "@/types";
 
 const SPAM_PATTERNS = [
@@ -29,16 +29,18 @@ export function detectHater(text: string): boolean {
 
 export function annotateComments(comments: Comment[]): Comment[] {
   const seen = new Map<string, number>();
-  return comments.map((c) => {
-    const key = c.text.trim().toLowerCase();
-    seen.set(key, (seen.get(key) ?? 0) + 1);
-    const duplicate = (seen.get(key) ?? 0) > 1;
-    return {
-      ...c,
-      isSpam: c.isSpam || detectSpam(c.text) || duplicate,
-      isHater: c.isHater || detectHater(c.text),
-    };
-  });
+  return applyGlossarySentiment(
+    comments.map((c) => {
+      const key = c.text.trim().toLowerCase();
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+      const duplicate = (seen.get(key) ?? 0) > 1;
+      return {
+        ...c,
+        isSpam: c.isSpam || detectSpam(c.text) || duplicate,
+        isHater: c.isHater || detectHater(c.text),
+      };
+    }),
+  );
 }
 
 export function markTopComments(comments: Comment[], limit = 5): Comment[] {

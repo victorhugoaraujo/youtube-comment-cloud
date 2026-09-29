@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const result = await generateIdeas(body.comments, body.videoTitle);
     if (result.ideas.length) {
       await prisma.user.update({
-        where: { id: user.id },
+        where: { id: user.billingOwnerId },
         data: { ideasUsedMonth: { increment: 1 } },
       });
     }

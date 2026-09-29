@@ -23,11 +23,25 @@ model User {
   ideasUsedMonth       Int      @default(0)
   scriptsUsedMonth     Int      @default(0)
   usageMonth           String   @default("")
+  ownerUserId          String?
+  owner                User?    @relation("Membros", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  members              User[]   @relation("Membros")
+  invitesSent          MemberInvite[]
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   analyses             Analysis[]
   channels             Channel[]
   scripts              Script[]
+}
+
+model MemberInvite {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  email     String
+  createdAt DateTime @default(now())
+
+  @@unique([ownerId, email])
 }
 
 model Channel {
@@ -51,9 +65,11 @@ model Analysis {
   videoTitle   String
   channelName  String
   channelId    String?
-  thumbnailUrl String?
-  commentCount Int      @default(0)
-  source       String   @default("demo")
+  thumbnailUrl         String?
+  commentCount         Int      @default(0)
+  youtubeCommentTotal  Int      @default(0)
+  ingestedCount        Int      @default(0)
+  source               String   @default("demo")
   statsJson    String
   commentsJson String
   createdAt    DateTime @default(now())

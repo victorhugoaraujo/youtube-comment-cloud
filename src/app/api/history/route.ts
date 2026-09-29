@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
   if (id) {
     const item = await prisma.analysis.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId: user.billingOwnerId },
     });
     if (!item) return jsonError("Análise não encontrada.", 404);
     return NextResponse.json({
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
   const items = await prisma.analysis.findMany({
     where: {
-      userId: user.id,
+      userId: user.billingOwnerId,
       ...(since ? { createdAt: { gte: since } } : {}),
     },
     orderBy: { createdAt: "desc" },
@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
       channelName: true,
       thumbnailUrl: true,
       commentCount: true,
+      youtubeCommentTotal: true,
+      ingestedCount: true,
       source: true,
       statsJson: true,
       createdAt: true,
@@ -61,6 +63,6 @@ export async function DELETE(req: NextRequest) {
   if (error) return error;
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return jsonError("Informe o id.");
-  await prisma.analysis.deleteMany({ where: { id, userId: user.id } });
+  await prisma.analysis.deleteMany({ where: { id, userId: user.billingOwnerId } });
   return NextResponse.json({ ok: true });
 }
