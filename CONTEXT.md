@@ -1,6 +1,6 @@
 # CommentIQ
 
-CommentIQ is the domain of a YouTube creator looking at *their own* audience so they can decide what to publish next. The core is **Análise of a recorded Vídeo** (Comentários → Temas → Ideias → Roteiro). It is not a catalog of YouTube videos, not an agency desk, and not a live-studio product.
+CommentIQ is the domain of a YouTube creator looking at *their own* audience so they can decide what to publish next. The core is **Análise of a recorded Vídeo** (Comentários → Temas → Ideias → Roteiro). It is not a catalog of YouTube videos, not Shorts analysis, not an agency desk, and not a live-studio product.
 
 Live (and Overlay) exist in the product but are **out of the current domain focus** — scale later; do not grow Chat/Nuvem language until then.
 
@@ -15,12 +15,12 @@ Um canal do YouTube que o Criador opera e **liga** ao CommentIQ. Sem Canal ligad
 _Avoid_: brand, página, property, conta Google, OAuth como nome do conceito
 
 **Vídeo**:
-O vídeo gravado já publicado **num Canal do Criador** cuja audiência a Análise recorta. O mesmo Vídeo pode ter várias Análises no tempo. Vídeo de terceiro está fora do domínio.
-_Avoid_: Análise, conteúdo, publicação, VOD
+O vídeo **longo** gravado e publicado **num Canal do Criador** cuja audiência a Análise recorta. O mesmo Vídeo pode ter várias Análises no tempo. Short, Live e vídeo de terceiro estão fora do domínio.
+_Avoid_: Análise, conteúdo, publicação, VOD, Short
 
 **Análise**:
-Um snapshot da audiência de um **Vídeo** de um **Canal** do Criador naquele puxão (Comentários ingeridos + leitura daquele momento). Reanalisar o mesmo Vídeo depois é outra Análise. Não cobre Live nem URL de terceiro.
-_Avoid_: Vídeo, relatório, report, recorte, Análise da live, Histórico
+Um snapshot da audiência de um **Vídeo** de um **Canal** do Criador naquele puxão (Comentários ingeridos + leitura daquele momento). Reanalisar o mesmo Vídeo depois é outra Análise e gasta Limite de novo. Não cobre Live, Short nem URL de terceiro.
+_Avoid_: Vídeo, relatório, report, recorte, Análise da live, Histórico, refresh
 
 **Live**:
 Uma transmissão ao vivo cujo chat o Criador acompanha em tempo real. Não é Análise. **Fora do núcleo** — existe no produto; não modelar nem escalar agora.
@@ -71,8 +71,8 @@ Unidades da API do YouTube, problema de infra. O Criador não “gasta Cota”.
 _Avoid_: crédito, quota do plano, uso mensal genérico
 
 **Limite**:
-Quantas Análises (e Lives) o Plano deixa no período. É o que o Criador vê: “2 de 10 Análises”.
-_Avoid_: Cota, crédito, quota
+Quantas Análises (e Lives) o Plano deixa no período. Cada Análise conta 1 — inclusive reanalisar o mesmo Vídeo. O Criador vê: “2 de 10 Análises”.
+_Avoid_: Cota, crédito, quota, “Vídeos distintos”
 
 ## Not concepts
 
@@ -82,10 +82,13 @@ These are screens or actions, not nouns in the domain:
 - **Comparação** — duas Análises lado a lado
 - **Calendário** — Ideias colocadas no tempo
 - **Chat / Nuvem** — detalhe de Live; não nomear até a Live ser o foco
+- **Short** — fora do domínio; não há Análise de Short
 
 ## Invariants
 
 - The unit of work is an **Análise** of one **Vídeo**, not a Live session.
 - Theme → idea → script only from **Comentários** of an Análise, never from Live chat, until Live is explicitly scaled.
 - An Análise belongs to a **Canal** the Criador has linked. Third-party URLs are out of domain.
+- **Shorts** are out of domain: no Análise.
 - **Total de comentários** (YouTube) and the count of **Comentários** in the Análise are different numbers; both are shown.
+- Reanalisar the same Vídeo creates a new Análise and consumes **Limite** again.
