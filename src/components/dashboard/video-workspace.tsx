@@ -239,11 +239,12 @@ export function VideoWorkspace({
                 <span className="inline-flex items-center gap-1">
                   <MessageSquare className="size-4" />
                   {ingestedCount.toLocaleString("pt-BR")} Comentários nesta Análise
-                  {" · "}
-                  {youtubeCommentTotal.toLocaleString("pt-BR")} no YouTube
+                  {source === "youtube"
+                    ? ` · ${youtubeCommentTotal.toLocaleString("pt-BR")} no YouTube`
+                    : " · demonstração (não são Comentários reais do YouTube)"}
                 </span>
               </div>
-              {youtubeCommentTotal !== ingestedCount && (
+              {source === "youtube" && youtubeCommentTotal !== ingestedCount && (
                 <p className="text-xs text-muted-foreground">
                   O Total de comentários é o número do YouTube. Esta Análise ingeriu o que a API
                   entregou neste puxão, até {user.limits.commentsPerVideo.toLocaleString("pt-BR")} no

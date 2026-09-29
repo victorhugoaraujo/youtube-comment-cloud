@@ -29,7 +29,6 @@ export interface AnaliseResult {
 export interface AnaliseStore {
   incrementAnalises(): Promise<number>;
   createAnalysis(input: {
-    actorId: string;
     billingOwnerId: string;
     video: VideoInfo & { channelId?: string };
     comments: Comment[];
@@ -60,7 +59,7 @@ function prismaStore(billingOwnerId: string, persistHistory: boolean): AnaliseSt
           channelName: input.video.channelName,
           channelId: input.video.channelId,
           thumbnailUrl: input.video.thumbnailUrl,
-          commentCount: input.ingestedCount,
+          commentCount: input.youtubeCommentTotal,
           youtubeCommentTotal: input.youtubeCommentTotal,
           ingestedCount: input.ingestedCount,
           source: input.source,
@@ -81,16 +80,6 @@ export async function createAnalise(options: {
 }): Promise<AnaliseResult> {
   const { videoId } = classifyTargetInput(options.url);
 
-  if (
-    options.actor.limits.videosPerMonth !== null &&
-    options.actor.videosUsedMonth >= options.actor.limits.videosPerMonth
-  ) {
-    throw new AnaliseHttpError(
-      "Você atingiu o limite de 5 Análises neste mês no plano Free. Faça upgrade para o Pro.",
-      402,
-    );
-  }
-
   const load = options.fetchCommentsImpl ?? fetchComments;
   let result: FetchedComments;
   try {
@@ -108,6 +97,16 @@ export async function createAnalise(options: {
     liveEnded: result.liveEnded,
   });
 
+  if (
+    options.actor.limits.videosPerMonth !== null &&
+    options.actor.videosUsedMonth >= options.actor.limits.videosPerMonth
+  ) {
+    throw new AnaliseHttpError(
+      "Você atingiu o limite de 5 Análises neste mês no plano Free. Faça upgrade para o Pro.",
+      402,
+    );
+  }
+
   const comments = applyGlossarySentiment(result.comments);
   const youtubeCommentTotal = result.video.commentCount || 0;
   const ingestedCount = comments.length;
@@ -120,7 +119,6 @@ export async function createAnalise(options: {
 
   const analisesUsedMonth = await store.incrementAnalises();
   const analysisId = await store.createAnalysis({
-    actorId: options.actor.id,
     billingOwnerId: options.actor.billingOwnerId,
     video: result.video,
     comments,

@@ -209,6 +209,22 @@ await expectError(
       createAnalise({
         actor: actor("free", 5),
         url: "https://www.youtube.com/watch?v=abcdefghijk",
+        fetchCommentsImpl: async () => fetched({ duration: "PT45S" }),
+        store: mem.store,
+      }),
+    400,
+    "short",
+  );
+  assert(mem.used() === 0, "watch Short at cap is Short, not Limite");
+}
+
+{
+  const mem = memoryStore();
+  await expectError(
+    () =>
+      createAnalise({
+        actor: actor("free", 5),
+        url: "https://www.youtube.com/watch?v=abcdefghijk",
         fetchCommentsImpl: async () => fetched(),
         store: mem.store,
       }),

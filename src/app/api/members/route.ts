@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonError, withUser } from "@/lib/api";
 import { AnaliseHttpError } from "@/lib/video-alvo";
-import { inviteMembro, listMembros, revokeMembro } from "@/lib/members";
+import { inviteMembro, listMembros, revokeMembro, assertCanManageMembros } from "@/lib/members";
 
 export async function GET() {
   const { user, error } = await withUser();
   if (error) return error;
   try {
-    if (user.role === "membro") {
-      return jsonError("Só o Criador vê a lista de Membros.", 403);
-    }
-    if (user.plan !== "business") {
-      return jsonError("Membros entram no plano Business.", 403);
-    }
+    assertCanManageMembros(user);
     const data = await listMembros(user.id);
     return NextResponse.json(data);
   } catch (error) {
