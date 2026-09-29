@@ -7,8 +7,12 @@ Live (and Overlay) exist in the product but are **out of the current domain focu
 ## Language
 
 **Criador**:
-A pessoa que usa o CommentIQ para aproveitar Comentários de um Vídeo alvo e gravar o que vem depois. É quem paga.
+Quem paga a Assinatura e escolhe o Plano. No Business pode convidar **Membros**. Não é agência: os Membros são daquele Criador, não de vários clientes.
 _Avoid_: User, cliente, conta, agência, dono do canal (como requisito)
+
+**Membro**:
+Pessoa convidada pelo Criador no Plano Business. Dispara Análise, Ideia e Roteiro. Não paga; não troca o Plano. Vários Membros, um Criador.
+_Avoid_: user, editor, colaborador, assento como pessoa, cliente de agência
 
 **Vídeo alvo**:
 O vídeo **longo** público já no YouTube cuja URL entra na Análise. Não precisa ser “do” Criador. O mesmo Vídeo alvo pode ter várias Análises no tempo. Short e Live estão fora.
@@ -59,8 +63,8 @@ Selo à parte do Sentimento: o Comentário ataca a *pessoa* de quem publicou o V
 _Avoid_: tóxico, hate speech, “mais negativo”
 
 **Plano**:
-O pacote que o Criador escolhe (Free, Pro, Business): o que pode fazer — volume de Análises, Lives. O Criador “está no Pro”.
-_Avoid_: tier, SKU, produto, Canal como feature do Plano
+O pacote que o Criador escolhe (Free, Pro, Business). Free/Pro = volume (Limite de Análises, Ideias, Roteiros). Business = isso e **Membros**. O Criador “está no Business”.
+_Avoid_: tier, SKU, produto, Canal como feature do Plano, agência
 
 **Assinatura**:
 O contrato de pagamento daquele Plano (ativa, atrasada, cancelada). Detalhe do Stripe, não o que o Criador “é”.
@@ -71,8 +75,8 @@ Unidades da API do YouTube, problema de infra. O Criador não “gasta Cota”.
 _Avoid_: crédito, quota do plano, uso mensal genérico
 
 **Limite**:
-Quantas Análises (e Lives) o Plano deixa no período. Cada Análise conta 1 — inclusive reanalisar o mesmo Vídeo alvo. O Criador vê: “2 de 10 Análises”.
-_Avoid_: Cota, crédito, quota, “Vídeos distintos”
+Quantas Análises (e Lives) o Plano deixa no **mês calendário**. Cada Análise conta 1 — inclusive reanalisar o mesmo Vídeo alvo. Criador e Membros gastam o mesmo Limite. O Criador vê: “2 de 10 Análises”.
+_Avoid_: Cota, crédito, quota, “Vídeos distintos”, janela rolante
 
 ## Not concepts
 
@@ -94,3 +98,5 @@ These are screens, later work, or exclusions — not nouns of the core:
 - **Shorts** and **Live** are out of the core: no Análise of those.
 - **Total de comentários** (YouTube) and the count of **Comentários** in the Análise are different numbers; both are shown.
 - Reanalisar the same Vídeo alvo creates a new Análise and consumes **Limite** again.
+- **Limite** resets on the calendar month. Criador and **Membros** share that Limite.
+- **Membros** exist only on Business, belong to one Criador, and are not an agency of many creators.
