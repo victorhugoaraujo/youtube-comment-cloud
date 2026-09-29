@@ -1,26 +1,26 @@
 # CommentIQ
 
-CommentIQ is the domain of a YouTube creator looking at *their own* audience so they can decide what to publish next. The core is **Análise of a recorded Vídeo** (Comentários → Temas → Ideias → Roteiro). It is not a catalog of YouTube videos, not Shorts analysis, not an agency desk, and not a live-studio product.
+CommentIQ is the domain of someone who picks a **Vídeo alvo**, gathers its **Comentários**, and turns what is worth using into **Ideias** and **Roteiros** for the next videos. The core is **Análise** (Comentários → Temas → Ideias → Roteiro). It is not a catalog of YouTube videos, not Shorts analysis, not an agency desk, not a linked-channel product, and not a live-studio product.
 
-Live (and Overlay) exist in the product but are **out of the current domain focus** — scale later; do not grow Chat/Nuvem language until then.
+Live (and Overlay) exist in the product but are **out of the current domain focus** — scale later; do not grow Chat/Nuvem language until then. **Canal** is also out of the core: a public URL is enough; do not require linking a YouTube channel to run an Análise.
 
 ## Language
 
 **Criador**:
-A pessoa que publica no YouTube e usa o CommentIQ para a audiência dos *próprios* canais. É quem paga.
-_Avoid_: User, cliente, conta, agência
+A pessoa que usa o CommentIQ para aproveitar Comentários de um Vídeo alvo e gravar o que vem depois. É quem paga.
+_Avoid_: User, cliente, conta, agência, dono do canal (como requisito)
 
-**Canal**:
-Um canal do YouTube que o Criador opera e **liga** ao CommentIQ. Sem Canal ligado não há Análise de domínio — colar URL solta não basta. No Business, vários Canais ainda são do mesmo Criador.
-_Avoid_: brand, página, property, conta Google, OAuth como nome do conceito
-
-**Vídeo**:
-O vídeo **longo** gravado e publicado **num Canal do Criador** cuja audiência a Análise recorta. O mesmo Vídeo pode ter várias Análises no tempo. Short, Live e vídeo de terceiro estão fora do domínio.
-_Avoid_: Análise, conteúdo, publicação, VOD, Short
+**Vídeo alvo**:
+O vídeo **longo** público já no YouTube cuja URL entra na Análise. Não precisa ser “do” Criador. O mesmo Vídeo alvo pode ter várias Análises no tempo. Short e Live estão fora.
+_Avoid_: Análise, conteúdo, publicação, VOD, Short, Canal, “meu vídeo”
 
 **Análise**:
-Um snapshot da audiência de um **Vídeo** de um **Canal** do Criador naquele puxão (Comentários ingeridos + leitura daquele momento). Reanalisar o mesmo Vídeo depois é outra Análise e gasta Limite de novo. Não cobre Live, Short nem URL de terceiro.
-_Avoid_: Vídeo, relatório, report, recorte, Análise da live, Histórico, refresh
+Um snapshot dos Comentários de um **Vídeo alvo** naquele puxão (ingeridos + leitura daquele momento). Entrada = URL pública. Reanalisar o mesmo Vídeo alvo depois é outra Análise e gasta Limite de novo. Não cobre Live nem Short.
+_Avoid_: Vídeo, relatório, report, recorte, Análise da live, Histórico, refresh, Canal
+
+**Canal**:
+Fora do núcleo. Ligar um canal do YouTube não autoriza nem bloqueia Análise. Reabrir só se um dia “meus canais” ou Live precisarem.
+_Avoid_: brand, property, OAuth, dono, requisito da Análise
 
 **Live**:
 Uma transmissão ao vivo cujo chat o Criador acompanha em tempo real. Não é Análise. **Fora do núcleo** — existe no produto; não modelar nem escalar agora.
@@ -31,11 +31,11 @@ O recorte da Live que o Criador joga na transmissão. Nasce da Live; não é a L
 _Avoid_: widget, browser source, Live, “o OBS”, Nuvem como entidade
 
 **Comentário**:
-Uma mensagem pública ingerida numa Análise — primeiro nível ou resposta. O YouTube conta os dois no **Total de comentários** do Vídeo; a Análise só vê os que a API entregou naquele puxão.
+Uma mensagem pública ingerida numa Análise — primeiro nível ou resposta. O YouTube conta os dois no **Total de comentários** do Vídeo alvo; a Análise só vê os que a API entregou naquele puxão.
 _Avoid_: thread, reply como entidade separada, mensagem, o Total de comentários
 
 **Total de comentários**:
-O número que o YouTube declara no Vídeo. Inclui o que a Análise ainda não ingeriu. O Criador vê os dois: Total de comentários vs quantos Comentários esta Análise tem.
+O número que o YouTube declara no Vídeo alvo. Inclui o que a Análise ainda não ingeriu. O Criador vê os dois: Total de comentários vs quantos Comentários esta Análise tem.
 _Avoid_: Comentários, “comentários errados”, alcance
 
 **Tema**:
@@ -55,12 +55,12 @@ A leitura do tom de um Comentário: positivo, negativo, pergunta ou spam. É uma
 _Avoid_: score, polaridade, mood
 
 **Hater**:
-Selo à parte do Sentimento: o Comentário ataca a *pessoa* do Criador. Pode coexistir com negativo (ou até com outro Sentimento). Reclamação do tema não é Hater.
+Selo à parte do Sentimento: o Comentário ataca a *pessoa* de quem publicou o Vídeo alvo. Pode coexistir com negativo. Reclamação do tema não é Hater.
 _Avoid_: tóxico, hate speech, “mais negativo”
 
 **Plano**:
-O pacote que o Criador escolhe (Free, Pro, Business): o que pode fazer — Lives, quantos Canais, volume. O Criador “está no Pro”.
-_Avoid_: tier, SKU, produto
+O pacote que o Criador escolhe (Free, Pro, Business): o que pode fazer — volume de Análises, Lives. O Criador “está no Pro”.
+_Avoid_: tier, SKU, produto, Canal como feature do Plano
 
 **Assinatura**:
 O contrato de pagamento daquele Plano (ativa, atrasada, cancelada). Detalhe do Stripe, não o que o Criador “é”.
@@ -71,24 +71,26 @@ Unidades da API do YouTube, problema de infra. O Criador não “gasta Cota”.
 _Avoid_: crédito, quota do plano, uso mensal genérico
 
 **Limite**:
-Quantas Análises (e Lives) o Plano deixa no período. Cada Análise conta 1 — inclusive reanalisar o mesmo Vídeo. O Criador vê: “2 de 10 Análises”.
+Quantas Análises (e Lives) o Plano deixa no período. Cada Análise conta 1 — inclusive reanalisar o mesmo Vídeo alvo. O Criador vê: “2 de 10 Análises”.
 _Avoid_: Cota, crédito, quota, “Vídeos distintos”
 
 ## Not concepts
 
-These are screens or actions, not nouns in the domain:
+These are screens, later work, or exclusions — not nouns of the core:
 
 - **Histórico** — lista de Análises
 - **Comparação** — duas Análises lado a lado
 - **Calendário** — Ideias colocadas no tempo
 - **Chat / Nuvem** — detalhe de Live; não nomear até a Live ser o foco
 - **Short** — fora do domínio; não há Análise de Short
+- **Canal ligado / OAuth** — não é porta de entrada da Análise
 
 ## Invariants
 
-- The unit of work is an **Análise** of one **Vídeo**, not a Live session.
-- Theme → idea → script only from **Comentários** of an Análise, never from Live chat, until Live is explicitly scaled.
-- An Análise belongs to a **Canal** the Criador has linked. Third-party URLs are out of domain.
-- **Shorts** are out of domain: no Análise.
+- The unit of work is an **Análise** of one **Vídeo alvo**, entered by public URL.
+- Theme → idea → script only from **Comentários** of that Análise.
+- Ownership of the YouTube channel is not required and not checked.
+- **Canal** does not authorize or deny an Análise.
+- **Shorts** and **Live** are out of the core: no Análise of those.
 - **Total de comentários** (YouTube) and the count of **Comentários** in the Análise are different numbers; both are shown.
-- Reanalisar the same Vídeo creates a new Análise and consumes **Limite** again.
+- Reanalisar the same Vídeo alvo creates a new Análise and consumes **Limite** again.

@@ -2,18 +2,16 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR 0004](0004-analise-is-public-video-alvo.md)
 
 ## Context
 
-The YouTube API accepts any public video URL. The domain, however, is a creator looking at *their own* audience to decide what to publish next — not a catalog of other people’s videos.
-
-A Canal in CommentIQ is a YouTube channel the Criador operates and links. An Análise of a Vídeo belongs to that Canal.
+The YouTube API accepts any public video URL. An earlier grilling round treated Análise as belonging to a linked Canal, so third-party URLs were out of domain.
 
 ## Decision
 
-Without a linked Canal, there is no domain Análise. A Vídeo must belong to one of the Criador’s Canais. Third-party URLs are out of domain even if the API would return comments.
+Superseded. The product job is: pick a Vídeo alvo, gather Comentários, produce Ideias and Roteiros. A linked Canal is not required.
 
 ## Consequences
 
-Pasting a URL is not enough. Product, ingest, and UI treat “not your Canal” as invalid, not as a successful Análise of someone else’s audience.
+See ADR 0004.
