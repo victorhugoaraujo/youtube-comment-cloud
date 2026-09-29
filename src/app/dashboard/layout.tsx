@@ -10,5 +10,9 @@ export default async function DashboardLayout({
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/dashboard");
 
-  return <DashboardShell user={user}>{children}</DashboardShell>;
+  return (
+    <DashboardShell user={user} youtubeReady={Boolean(process.env.YOUTUBE_API_KEY)}>
+      {children}
+    </DashboardShell>
+  );
 }
