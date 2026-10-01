@@ -20,7 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PLAN_LABEL, hasMinPlan, type PlanId } from "@/lib/plans";
+import { writeAnaliseSnapshot } from "@/lib/analise-session";
 import type { SessionUser } from "@/lib/auth";
+import { VideoWorkspace } from "@/components/dashboard/video-workspace";
 
 const NAV = [
   { href: "/dashboard", label: "Comentários", icon: MessageSquare },
@@ -36,15 +38,19 @@ const NAV = [
 
 export function DashboardShell({
   user,
+  youtubeReady,
   children,
 }: {
   user: SessionUser;
+  youtubeReady: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const onComments = pathname === "/dashboard";
 
   async function logout() {
+    writeAnaliseSnapshot(user.id, null);
     await fetch("/api/auth", { method: "DELETE" });
     router.push("/");
     router.refresh();
@@ -126,7 +132,12 @@ export function DashboardShell({
             </Link>
           ))}
         </div>
-        <div className="flex-1 p-4 sm:p-6">{children}</div>
+        <div className="flex-1 p-4 sm:p-6">
+          <div className={onComments ? undefined : "hidden"}>
+            <VideoWorkspace user={user} youtubeReady={youtubeReady} />
+          </div>
+          {onComments ? null : children}
+        </div>
       </div>
     </div>
   );

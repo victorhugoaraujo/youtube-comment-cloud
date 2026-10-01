@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, Eye, MessageSquare, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import { ScriptDocument } from "@/components/script-document";
 import { DEFAULT_FILTERS, filterComments, computeStats } from "@/lib/filters";
 import { extractWordFrequencies } from "@/lib/word-cloud";
 import { api } from "@/lib/client";
+import { readAnaliseSnapshot, writeAnaliseSnapshot, type AnaliseSnapshot } from "@/lib/analise-session";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
 import type { Comment, CommentFilters, VideoInfo } from "@/types";
@@ -41,6 +42,65 @@ export function VideoWorkspace({
   const [youtubeCommentTotal, setYoutubeCommentTotal] = useState(0);
   const [analisesUsedMonth, setAnalisesUsedMonth] = useState(user.videosUsedMonth);
   const [busy, setBusy] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false);
+
+  useEffect(() => {
+    const saved = readAnaliseSnapshot(user.id);
+    if (saved) applySnapshot(saved);
+    setRestored(true);
+    // Restore once per mount. Later edits are written by the effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id]);
+
+  useEffect(() => {
+    if (!restored) return;
+    if (!video) {
+      writeAnaliseSnapshot(user.id, null);
+      return;
+    }
+    const snapshot: AnaliseSnapshot = {
+      analysisId,
+      video,
+      comments,
+      source: source === "demo" ? "demo" : "youtube",
+      youtubeCommentTotal,
+      ingestedCount,
+      analisesUsedMonth,
+      filters,
+      summary,
+      ideas,
+      script,
+    };
+    writeAnaliseSnapshot(user.id, snapshot);
+  }, [
+    restored,
+    user.id,
+    analysisId,
+    video,
+    comments,
+    source,
+    youtubeCommentTotal,
+    ingestedCount,
+    analisesUsedMonth,
+    filters,
+    summary,
+    ideas,
+    script,
+  ]);
+
+  function applySnapshot(saved: AnaliseSnapshot) {
+    setAnalysisId(saved.analysisId);
+    setVideo(saved.video);
+    setComments(saved.comments);
+    setSource(saved.source);
+    setIngestedCount(saved.ingestedCount);
+    setYoutubeCommentTotal(saved.youtubeCommentTotal);
+    setAnalisesUsedMonth(saved.analisesUsedMonth);
+    setFilters(saved.filters);
+    setSummary(saved.summary);
+    setIdeas(saved.ideas);
+    setScript(saved.script);
+  }
 
   const filtered = useMemo(() => filterComments(comments, filters), [comments, filters]);
   const stats = useMemo(() => computeStats(comments, filtered), [comments, filtered]);
