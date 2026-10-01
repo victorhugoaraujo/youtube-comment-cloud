@@ -3,7 +3,7 @@ import { jsonError, withUser } from "@/lib/api";
 import { AnaliseHttpError, createAnalise } from "@/lib/analise";
 
 export async function POST(req: NextRequest) {
-  const { user, error } = await withUser();
+  const { user, error } = await withUser(req);
   if (error) return error;
 
   const body = (await req.json().catch(() => ({}))) as { url?: string };

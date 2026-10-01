@@ -55,8 +55,15 @@ export function assertVideoIsAlvo(meta: {
   duration?: string | null;
   liveChatId?: string | null;
   liveEnded?: boolean;
+  liveBroadcastContent?: string | null;
 }): void {
   if (meta.source !== "youtube") return;
+  if (meta.liveBroadcastContent === "live" || meta.liveBroadcastContent === "upcoming") {
+    throw new AnaliseHttpError(
+      "Esta URL é de uma Live em andamento. Análise é só de vídeo gravado.",
+      400,
+    );
+  }
   const seconds = isoDurationSeconds(meta.duration);
   if (seconds !== null && seconds > 0 && seconds <= 60) {
     throw new AnaliseHttpError("Este vídeo é um Short. Cole um vídeo longo.", 400);

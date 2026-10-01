@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { SESSION_COOKIE } from "@/lib/session-cookie";
 
 export async function middleware(req: NextRequest) {
-  const token = req.cookies.get("commentiq_session")?.value;
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
   const login = new URL("/login", req.url);
   login.searchParams.set("next", req.nextUrl.pathname);
 
