@@ -8,12 +8,10 @@ const YT = "https://www.googleapis.com/youtube/v3";
 
 export class YoutubeRequestError extends Error {
   readonly reason: string | null;
-  readonly status: number;
 
-  constructor(message: string, status: number, reason: string | null) {
+  constructor(message: string, reason: string | null) {
     super(message);
     this.name = "YoutubeRequestError";
-    this.status = status;
     this.reason = reason;
   }
 }
@@ -28,32 +26,32 @@ async function youtubeError(res: Response, fallback: string): Promise<YoutubeReq
     if (reason === "commentsDisabled") {
       return new YoutubeRequestError(
         "Este vídeo está com os comentários desativados no YouTube.",
-        res.status,
         reason,
       );
     }
     if (reason === "quotaExceeded") {
       return new YoutubeRequestError(
         "A cota diária da YouTube API esgotou. Tente de novo amanhã.",
-        res.status,
         reason,
       );
     }
     if (reason === "keyInvalid" || reason === "ipRefererBlocked") {
       return new YoutubeRequestError(
         "YOUTUBE_API_KEY recusada. No Google Cloud, ative YouTube Data API v3 e tire restrição de IP (a Vercel muda de IP).",
-        res.status,
         reason,
       );
     }
     if (reason === "videoNotFound" || res.status === 404) {
-      return new YoutubeRequestError("Vídeo não encontrado. Use um vídeo público.", res.status, reason);
+      return new YoutubeRequestError(
+        "Vídeo não encontrado. Use um vídeo público.",
+        reason ?? "videoNotFound",
+      );
     }
-    if (json.error?.message) return new YoutubeRequestError(json.error.message, res.status, reason);
+    if (json.error?.message) return new YoutubeRequestError(json.error.message, reason);
   } catch {
     /* use fallback */
   }
-  return new YoutubeRequestError(`${fallback} (${res.status})`, res.status, null);
+  return new YoutubeRequestError(`${fallback} (${res.status})`, null);
 }
 
 export function parseVideoId(input: string): string | null {
@@ -87,6 +85,7 @@ interface YtVideo {
     channelTitle?: string;
     channelId?: string;
     publishedAt?: string;
+    liveBroadcastContent?: string;
     thumbnails?: { high?: { url?: string }; medium?: { url?: string } };
   };
   statistics?: { commentCount?: string; viewCount?: string };
@@ -156,6 +155,7 @@ export interface FetchedComments {
   truncated: boolean;
   duration?: string | null;
   liveEnded?: boolean;
+  liveBroadcastContent?: string | null;
 }
 
 export async function fetchVideoMeta(videoId: string): Promise<{
@@ -164,6 +164,7 @@ export async function fetchVideoMeta(videoId: string): Promise<{
   source: "youtube" | "demo";
   duration?: string | null;
   liveEnded?: boolean;
+  liveBroadcastContent?: string | null;
 }> {
   const key = process.env.YOUTUBE_API_KEY;
   if (!key) {
@@ -183,9 +184,11 @@ export async function fetchVideoMeta(videoId: string): Promise<{
   if (!res.ok) throw await youtubeError(res, "YouTube videos.list falhou");
   const data = (await res.json()) as { items?: YtVideo[] };
   const item = data.items?.[0];
-  if (!item) throw new Error("Vídeo não encontrado");
+  if (!item) {
+    throw new YoutubeRequestError("Vídeo não encontrado. Use um vídeo público.", "videoNotFound");
+  }
   if (item.status?.privacyStatus === "private") {
-    throw new Error("Este vídeo é privado. Cole um vídeo público.");
+    throw new YoutubeRequestError("Este vídeo é privado. Cole um vídeo público.", "private");
   }
 
   const thumb =
@@ -210,6 +213,7 @@ export async function fetchVideoMeta(videoId: string): Promise<{
     },
     duration: item.contentDetails?.duration ?? null,
     liveEnded: Boolean(item.liveStreamingDetails?.actualEndTime),
+    liveBroadcastContent: item.snippet?.liveBroadcastContent ?? null,
   };
 }
 
@@ -258,6 +262,7 @@ export async function fetchComments(
           truncated: false,
           duration: meta.duration,
           liveEnded: meta.liveEnded,
+          liveBroadcastContent: meta.liveBroadcastContent,
         };
       }
       throw error;
@@ -315,6 +320,7 @@ export async function fetchComments(
     truncated,
     duration: meta.duration,
     liveEnded: meta.liveEnded,
+    liveBroadcastContent: meta.liveBroadcastContent,
   };
 }
 

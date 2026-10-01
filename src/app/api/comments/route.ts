@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonError, withUser } from "@/lib/api";
 import { AnaliseHttpError, createAnalise } from "@/lib/analise";
-import { SESSION_COOKIE } from "@/lib/session-cookie";
 
 export async function POST(req: NextRequest) {
-  if (!req.cookies.get(SESSION_COOKIE)?.value) {
-    return jsonError("Faça login para continuar.", 401);
-  }
-
-  const { user, error } = await withUser();
+  const { user, error } = await withUser(req);
   if (error) return error;
 
   const body = (await req.json().catch(() => ({}))) as { url?: string };

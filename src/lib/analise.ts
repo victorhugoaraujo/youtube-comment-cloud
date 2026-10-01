@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { computeStats } from "@/lib/filters";
-import { fetchComments, type FetchedComments } from "@/lib/youtube";
+import { fetchComments, YoutubeRequestError, type FetchedComments } from "@/lib/youtube";
 import { integrations } from "@/lib/env";
 import { applyGlossarySentiment } from "@/lib/sentiment";
 import { AnaliseHttpError, assertVideoIsAlvo, classifyTargetInput } from "@/lib/video-alvo";
@@ -85,8 +85,15 @@ export async function createAnalise(options: {
   try {
     result = await load(videoId, options.actor.limits.commentsPerVideo);
   } catch (error) {
+    if (error instanceof YoutubeRequestError) {
+      const status =
+        error.reason === "videoNotFound" || error.reason === "private" || error.reason === "commentsDisabled"
+          ? 400
+          : 502;
+      throw new AnaliseHttpError(error.message, status);
+    }
     const message = error instanceof Error ? error.message : "Falha ao buscar comentários.";
-    const status = /não encontrado|nao encontrado|privado|inexistente|desativados/i.test(message) ? 400 : 502;
+    const status = /não encontrado|nao encontrado|privado|desativados/i.test(message) ? 400 : 502;
     throw new AnaliseHttpError(message, status);
   }
 
@@ -95,6 +102,7 @@ export async function createAnalise(options: {
     duration: result.duration,
     liveChatId: result.video.liveChatId,
     liveEnded: result.liveEnded,
+    liveBroadcastContent: result.liveBroadcastContent,
   });
 
   if (
