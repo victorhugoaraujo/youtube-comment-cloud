@@ -1,4 +1,5 @@
-import { vistaDaPuxada } from "./puxada";
+import { filtrosDaPuxada, vistaDaPuxada } from "./puxada";
+import { DEFAULT_FILTERS } from "./filters";
 import type { Comment } from "@/types";
 
 function assert(cond: boolean, message: string) {
@@ -60,5 +61,16 @@ const complete = vistaDaPuxada({
 assert(complete.totalDeComentarios === 1, "puxada completa ainda mostra o Total de comentários");
 assert(complete.comentariosNestaAnalise === 1, "puxada completa ainda mostra os Comentários trazidos");
 assert(!complete.incompleta, "os dois números iguais fecham a puxada");
+
+const filtros = filtrosDaPuxada({
+  ...DEFAULT_FILTERS,
+  search: "thumbnail",
+  sentiment: "negative",
+  questionsOnly: true,
+  sortBy: "date",
+});
+assert(filtros.sentiment === "all", "não há filtro por sentimento");
+assert(filtros.questionsOnly === false, "não há lista só de perguntas");
+assert(filtros.search === "thumbnail" && filtros.sortBy === "date", "busca e ordenação continuam");
 
 console.log("puxada checks passed");

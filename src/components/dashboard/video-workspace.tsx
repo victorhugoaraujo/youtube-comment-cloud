@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, Eye, MessageSquare, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -8,15 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VideoInput } from "@/components/video-input";
+import { FiltersBar } from "@/components/filters-bar";
 import { CommentsList } from "@/components/comments-list";
+import { StatsPanel } from "@/components/stats-panel";
 import { ScriptDocument } from "@/components/script-document";
-import { DEFAULT_FILTERS } from "@/lib/filters";
+import { DEFAULT_FILTERS, filterComments, computeStats } from "@/lib/filters";
 import { api } from "@/lib/client";
 import { readAnaliseSnapshot, writeAnaliseSnapshot, type AnaliseSnapshot } from "@/lib/analise-session";
-import { vistaDaPuxada } from "@/lib/puxada";
+import { filtrosDaPuxada, puxadaIncompleta, vistaDaPuxada } from "@/lib/puxada";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
-import type { Comment, VideoInfo } from "@/types";
+import type { Comment, CommentFilters, VideoInfo } from "@/types";
 import type { VideoIdea, VideoScript } from "@/lib/openai";
 
 export function VideoWorkspace({
@@ -31,6 +33,7 @@ export function VideoWorkspace({
   const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [video, setVideo] = useState<VideoInfo | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [filters, setFilters] = useState<CommentFilters>(DEFAULT_FILTERS);
   const [summary, setSummary] = useState<string | null>(null);
   const [ideas, setIdeas] = useState<VideoIdea[]>([]);
   const [script, setScript] = useState<VideoScript | null>(null);
@@ -64,7 +67,7 @@ export function VideoWorkspace({
       ingestedCount,
       truncated,
       analisesUsedMonth,
-      filters: DEFAULT_FILTERS,
+      filters: filtrosDaPuxada(filters),
       summary,
       ideas,
       script,
@@ -81,6 +84,7 @@ export function VideoWorkspace({
     ingestedCount,
     truncated,
     analisesUsedMonth,
+    filters,
     summary,
     ideas,
     script,
@@ -93,13 +97,26 @@ export function VideoWorkspace({
     setSource(saved.source);
     setIngestedCount(saved.ingestedCount);
     setYoutubeCommentTotal(saved.youtubeCommentTotal);
-    setTruncated(Boolean(saved.truncated) || saved.youtubeCommentTotal !== saved.ingestedCount);
+    setTruncated(
+      puxadaIncompleta({
+        youtubeCommentTotal: saved.youtubeCommentTotal,
+        ingestedCount: saved.ingestedCount,
+        truncated: Boolean(saved.truncated),
+      }),
+    );
     setAnalisesUsedMonth(saved.analisesUsedMonth);
+    setFilters(filtrosDaPuxada(saved.filters));
     setSummary(saved.summary);
     setIdeas(saved.ideas);
     setScript(saved.script);
   }
 
+  const puxadaFilters = useMemo(() => filtrosDaPuxada(filters), [filters]);
+  const filtered = useMemo(
+    () => filterComments(comments, puxadaFilters),
+    [comments, puxadaFilters],
+  );
+  const stats = useMemo(() => computeStats(comments, filtered), [comments, filtered]);
   const vista = vistaDaPuxada({
     youtubeCommentTotal,
     ingestedCount,
@@ -131,7 +148,13 @@ export function VideoWorkspace({
       const total = data.youtubeCommentTotal ?? data.video.commentCount;
       setIngestedCount(ingested);
       setYoutubeCommentTotal(total);
-      setTruncated(Boolean(data.truncated) || total !== ingested);
+      const incompleta = puxadaIncompleta({
+        youtubeCommentTotal: total,
+        ingestedCount: ingested,
+        truncated: Boolean(data.truncated),
+      });
+      setTruncated(incompleta);
+      setFilters(DEFAULT_FILTERS);
       setAnalisesUsedMonth(data.analisesUsedMonth ?? user.videosUsedMonth + 1);
       if (data.source === "demo") {
         toast.message("YouTube API sem chave — usando comentários de demonstração, não reais.");
@@ -139,7 +162,7 @@ export function VideoWorkspace({
         toast.message("Vídeo encontrado, mas não há comentários públicos.");
       } else {
         toast.success(
-          data.truncated || total > ingested
+          incompleta
             ? `Análise pronta: ${ingested.toLocaleString("pt-BR")} Comentários nesta Análise, de ${total.toLocaleString("pt-BR")} no Total de comentários.`
             : `${ingested.toLocaleString("pt-BR")} Comentários de “${data.video.title}”. O Total de comentários no YouTube é ${total.toLocaleString("pt-BR")}.`,
         );
@@ -157,7 +180,7 @@ export function VideoWorkspace({
     try {
       const data = await api<{ summary: string }>("/api/analysis", {
         method: "POST",
-        body: JSON.stringify({ comments }),
+        body: JSON.stringify({ comments: filtered }),
       });
       setSummary(data.summary);
     } catch (e) {
@@ -215,7 +238,7 @@ export function VideoWorkspace({
         body: JSON.stringify({
           format,
           title: video?.title ?? "comentarios",
-          comments,
+          comments: filtered,
         }),
       });
       if (!res.ok) {
@@ -421,11 +444,27 @@ export function VideoWorkspace({
             )}
           </section>
 
+          <StatsPanel
+            stats={stats}
+            youtubeTotal={vista.totalDeComentarios}
+            ingestedCount={vista.comentariosNestaAnalise}
+          />
+          <FiltersBar
+            filters={puxadaFilters}
+            onChange={setFilters}
+            resultCount={filtered.length}
+            showSentimentFilter={false}
+            showQuestionsOnly={false}
+          />
           <div className="space-y-2">
             <h3 className="text-sm font-semibold">Comentários</h3>
             <CommentsList
-              comments={vista.comentarios}
-              emptyMessage="Esta Análise não trouxe Comentários."
+              comments={filtered}
+              emptyMessage={
+                vista.comentarios.length === 0
+                  ? "Esta Análise não trouxe Comentários."
+                  : "Nenhum comentário encontrado com esses filtros."
+              }
             />
           </div>
         </div>
