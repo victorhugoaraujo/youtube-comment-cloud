@@ -7,6 +7,7 @@ import type { SessionUser } from "./auth";
 import type { Comment, VideoInfo } from "@/types";
 import type { FetchedComments } from "./youtube";
 import { POST as openAnalise } from "@/app/api/comments/route";
+import { vistaDaPuxada } from "./puxada";
 
 function assert(cond: boolean, message: string) {
   if (!cond) throw new Error(message);
@@ -684,6 +685,110 @@ for (const broadcast of ["live", "upcoming"] as const) {
       );
       assert(res.status === 401, `sem sessão responde 401, veio ${res.status}`);
       assert(!pullStarted, "sem sessão a puxada não começa");
+    },
+  );
+}
+
+{
+  const mem = memoryStore();
+  await withYoutubeFetch(
+    (url) => {
+      if (url.pathname.endsWith("/videos")) {
+        return { status: 200, body: youtubeVideoList({ commentCount: "6" }) };
+      }
+      return {
+        status: 200,
+        body: {
+          items: [
+            {
+              id: "thread-1",
+              snippet: {
+                totalReplyCount: 1,
+                topLevelComment: {
+                  id: "c1",
+                  snippet: {
+                    textOriginal: "Amei o vídeo, parabéns",
+                    authorDisplayName: "Ana",
+                    likeCount: 3,
+                    publishedAt: "2024-01-02T00:00:00Z",
+                  },
+                },
+              },
+              replies: {
+                comments: [
+                  {
+                    id: "r1",
+                    snippet: {
+                      textOriginal: "Concordo com você",
+                      authorDisplayName: "Bia",
+                      likeCount: 0,
+                      publishedAt: "2024-01-02T01:00:00Z",
+                    },
+                  },
+                ],
+              },
+            },
+            {
+              id: "thread-spam",
+              snippet: {
+                totalReplyCount: 0,
+                topLevelComment: {
+                  id: "c-spam",
+                  snippet: {
+                    textOriginal: "Ganhe dinheiro agora bit.ly/xpto",
+                    authorDisplayName: "Promo",
+                    likeCount: 0,
+                    publishedAt: "2024-01-02T02:00:00Z",
+                  },
+                },
+              },
+            },
+            {
+              id: "thread-hater",
+              snippet: {
+                totalReplyCount: 0,
+                topLevelComment: {
+                  id: "c-hater",
+                  snippet: {
+                    textOriginal: "Canal lixo, cala a boca",
+                    authorDisplayName: "Hater",
+                    likeCount: 0,
+                    publishedAt: "2024-01-02T03:00:00Z",
+                  },
+                },
+              },
+            },
+          ],
+        },
+      };
+    },
+    async () => {
+      const opened = await createAnalise({
+        actor: actor("pro"),
+        url: "https://www.youtube.com/watch?v=abcdefghijk",
+        store: mem.store,
+      });
+      const vista = vistaDaPuxada({
+        youtubeCommentTotal: opened.youtubeCommentTotal,
+        ingestedCount: opened.ingestedCount,
+        truncated: opened.truncated,
+        comments: opened.comments,
+      });
+      assert(vista.totalDeComentarios === 6, "Total de comentários do YouTube na puxada");
+      assert(vista.comentariosNestaAnalise === 4, "resposta entra na contagem ingerida");
+      assert(vista.incompleta, "puxada menor que o Total continua incompleta");
+      assert(
+        vista.comentarios.some((c) => c.text === "Concordo com você"),
+        "resposta entra na lista",
+      );
+      const spam = vista.comentarios.find((c) => c.text.includes("bit.ly"));
+      assert(Boolean(spam) && spam?.sentiment === "spam", "spam marcado como spam e na lista");
+      const hater = vista.comentarios.find((c) => c.text === "Canal lixo, cala a boca");
+      assert(Boolean(hater) && hater?.isHater === true, "hater com selo e na lista");
+      assert(
+        vista.comentarios.some((c) => c.text === "Amei o vídeo, parabéns"),
+        "a lista não fica só de perguntas",
+      );
     },
   );
 }

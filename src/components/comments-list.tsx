@@ -5,16 +5,18 @@ import type { Comment } from "@/types";
 
 interface CommentsListProps {
   comments: Comment[];
+  emptyMessage?: string;
 }
 
-export function CommentsList({ comments }: CommentsListProps) {
+export function CommentsList({
+  comments,
+  emptyMessage = "Nenhum comentário encontrado. Confira os filtros ou se o vídeo tem comentários públicos.",
+}: CommentsListProps) {
   if (comments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-muted-foreground">
         <MessageSquareOff className="size-10 opacity-40" />
-        <p className="text-sm">
-          Nenhum comentário encontrado. Confira os filtros ou se o vídeo tem comentários públicos.
-        </p>
+        <p className="text-sm">{emptyMessage}</p>
       </div>
     );
   }

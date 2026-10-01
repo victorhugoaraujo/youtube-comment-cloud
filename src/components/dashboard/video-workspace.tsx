@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Download, Eye, MessageSquare, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -8,18 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VideoInput } from "@/components/video-input";
-import { FiltersBar } from "@/components/filters-bar";
 import { CommentsList } from "@/components/comments-list";
-import { StatsPanel } from "@/components/stats-panel";
-import { WordCloud } from "@/components/word-cloud";
 import { ScriptDocument } from "@/components/script-document";
-import { DEFAULT_FILTERS, filterComments, computeStats } from "@/lib/filters";
-import { extractWordFrequencies } from "@/lib/word-cloud";
+import { DEFAULT_FILTERS } from "@/lib/filters";
 import { api } from "@/lib/client";
 import { readAnaliseSnapshot, writeAnaliseSnapshot, type AnaliseSnapshot } from "@/lib/analise-session";
+import { vistaDaPuxada } from "@/lib/puxada";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
-import type { Comment, CommentFilters, VideoInfo } from "@/types";
+import type { Comment, VideoInfo } from "@/types";
 import type { VideoIdea, VideoScript } from "@/lib/openai";
 
 export function VideoWorkspace({
@@ -34,12 +31,12 @@ export function VideoWorkspace({
   const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [video, setVideo] = useState<VideoInfo | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [filters, setFilters] = useState<CommentFilters>(DEFAULT_FILTERS);
   const [summary, setSummary] = useState<string | null>(null);
   const [ideas, setIdeas] = useState<VideoIdea[]>([]);
   const [script, setScript] = useState<VideoScript | null>(null);
   const [ingestedCount, setIngestedCount] = useState(0);
   const [youtubeCommentTotal, setYoutubeCommentTotal] = useState(0);
+  const [truncated, setTruncated] = useState(false);
   const [analisesUsedMonth, setAnalisesUsedMonth] = useState(user.videosUsedMonth);
   const [busy, setBusy] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
@@ -65,8 +62,9 @@ export function VideoWorkspace({
       source: source === "demo" ? "demo" : "youtube",
       youtubeCommentTotal,
       ingestedCount,
+      truncated,
       analisesUsedMonth,
-      filters,
+      filters: DEFAULT_FILTERS,
       summary,
       ideas,
       script,
@@ -81,8 +79,8 @@ export function VideoWorkspace({
     source,
     youtubeCommentTotal,
     ingestedCount,
+    truncated,
     analisesUsedMonth,
-    filters,
     summary,
     ideas,
     script,
@@ -95,16 +93,19 @@ export function VideoWorkspace({
     setSource(saved.source);
     setIngestedCount(saved.ingestedCount);
     setYoutubeCommentTotal(saved.youtubeCommentTotal);
+    setTruncated(Boolean(saved.truncated) || saved.youtubeCommentTotal !== saved.ingestedCount);
     setAnalisesUsedMonth(saved.analisesUsedMonth);
-    setFilters(saved.filters);
     setSummary(saved.summary);
     setIdeas(saved.ideas);
     setScript(saved.script);
   }
 
-  const filtered = useMemo(() => filterComments(comments, filters), [comments, filters]);
-  const stats = useMemo(() => computeStats(comments, filtered), [comments, filtered]);
-  const words = useMemo(() => extractWordFrequencies(filtered), [filtered]);
+  const vista = vistaDaPuxada({
+    youtubeCommentTotal,
+    ingestedCount,
+    truncated,
+    comments,
+  });
 
   async function handleAnalyze(url: string) {
     setLoading(true);
@@ -126,21 +127,21 @@ export function VideoWorkspace({
       setVideo(data.video);
       setComments(data.comments);
       setSource(data.source);
-      setIngestedCount(data.ingestedCount ?? data.comments.length);
-      setYoutubeCommentTotal(data.youtubeCommentTotal ?? data.video.commentCount);
+      const ingested = data.ingestedCount ?? data.comments.length;
+      const total = data.youtubeCommentTotal ?? data.video.commentCount;
+      setIngestedCount(ingested);
+      setYoutubeCommentTotal(total);
+      setTruncated(Boolean(data.truncated) || total !== ingested);
       setAnalisesUsedMonth(data.analisesUsedMonth ?? user.videosUsedMonth + 1);
-      setFilters(DEFAULT_FILTERS);
       if (data.source === "demo") {
         toast.message("YouTube API sem chave — usando comentários de demonstração, não reais.");
       } else if (data.comments.length === 0) {
         toast.message("Vídeo encontrado, mas não há comentários públicos.");
       } else {
-        const ingested = data.ingestedCount ?? data.comments.length;
-        const total = data.youtubeCommentTotal ?? data.video.commentCount;
         toast.success(
           data.truncated || total > ingested
-            ? `Análise pronta: ${ingested.toLocaleString("pt-BR")} Comentários ingeridos de ${total.toLocaleString("pt-BR")} no YouTube.`
-            : `${ingested.toLocaleString("pt-BR")} Comentários de “${data.video.title}”.`,
+            ? `Análise pronta: ${ingested.toLocaleString("pt-BR")} Comentários nesta Análise, de ${total.toLocaleString("pt-BR")} no Total de comentários.`
+            : `${ingested.toLocaleString("pt-BR")} Comentários de “${data.video.title}”. O Total de comentários no YouTube é ${total.toLocaleString("pt-BR")}.`,
         );
       }
     } catch (e) {
@@ -156,7 +157,7 @@ export function VideoWorkspace({
     try {
       const data = await api<{ summary: string }>("/api/analysis", {
         method: "POST",
-        body: JSON.stringify({ comments: filtered.length ? filtered : comments }),
+        body: JSON.stringify({ comments }),
       });
       setSummary(data.summary);
     } catch (e) {
@@ -214,7 +215,7 @@ export function VideoWorkspace({
         body: JSON.stringify({
           format,
           title: video?.title ?? "comentarios",
-          comments: filtered,
+          comments,
         }),
       });
       if (!res.ok) {
@@ -297,21 +298,7 @@ export function VideoWorkspace({
                   <Eye className="size-4" />
                   {video.viewCount.toLocaleString("pt-BR")} views
                 </span>
-                <span className="inline-flex items-center gap-1">
-                  <MessageSquare className="size-4" />
-                  {ingestedCount.toLocaleString("pt-BR")} Comentários nesta Análise
-                  {source === "youtube"
-                    ? ` · ${youtubeCommentTotal.toLocaleString("pt-BR")} no YouTube`
-                    : " · demonstração (não são Comentários reais do YouTube)"}
-                </span>
               </div>
-              {source === "youtube" && youtubeCommentTotal !== ingestedCount && (
-                <p className="text-xs text-muted-foreground">
-                  O Total de comentários é o número do YouTube. Esta Análise ingeriu o que a API
-                  entregou neste puxão, até {user.limits.commentsPerVideo.toLocaleString("pt-BR")} no
-                  plano.
-                </p>
-              )}
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={runSummary} disabled={busy === "summary"}>
                   <Sparkles className="size-3.5" />
@@ -400,14 +387,47 @@ export function VideoWorkspace({
             </Card>
           )}
 
-          <StatsPanel
-            stats={stats}
-            youtubeTotal={youtubeCommentTotal}
-            ingestedCount={ingestedCount}
-          />
-          <WordCloud words={words} />
-          <FiltersBar filters={filters} onChange={setFilters} resultCount={filtered.length} />
-          <CommentsList comments={filtered} />
+          <section aria-label="Totais da puxada" className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-sm text-muted-foreground">Total de comentários</p>
+              <p className="text-2xl font-bold">
+                {vista.totalDeComentarios.toLocaleString("pt-BR")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {source === "demo"
+                  ? "Demonstração — não é o número real do YouTube."
+                  : "O que o YouTube declara no Vídeo alvo."}
+              </p>
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <p className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                <MessageSquare className="size-4" />
+                Comentários nesta Análise
+              </p>
+              <p className="text-2xl font-bold">
+                {vista.comentariosNestaAnalise.toLocaleString("pt-BR")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {source === "demo"
+                  ? "Demonstração — não são Comentários reais do YouTube. Respostas entram nesta conta."
+                  : "O que esta puxada trouxe. Respostas entram nesta conta."}
+              </p>
+            </div>
+            {vista.incompleta && (
+              <p className="text-sm text-muted-foreground sm:col-span-2">
+                Esta puxada não é a audiência inteira. Os dois números continuam valendo: o Total de
+                comentários e quantos Comentários esta Análise trouxe.
+              </p>
+            )}
+          </section>
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">Comentários</h3>
+            <CommentsList
+              comments={vista.comentarios}
+              emptyMessage="Esta Análise não trouxe Comentários."
+            />
+          </div>
         </div>
       )}
     </div>
