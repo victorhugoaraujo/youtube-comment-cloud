@@ -6,8 +6,7 @@ import { currentUsageMonth, isPlanId, type PlanId } from "@/lib/plans";
 import { ensureDatabase } from "@/lib/ensure-database";
 import type { PlanLimits } from "@/lib/plans";
 import { PLAN_LIMITS } from "@/lib/plans";
-
-const COOKIE = "commentiq_session";
+import { SESSION_COOKIE } from "@/lib/session-cookie";
 
 function secret() {
   const value = process.env.AUTH_SECRET;
@@ -48,7 +47,7 @@ export async function createSession(userId: string) {
     .sign(secret());
 
   const jar = await cookies();
-  jar.set(COOKIE, token, {
+  jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -59,12 +58,12 @@ export async function createSession(userId: string) {
 
 export async function clearSession() {
   const jar = await cookies();
-  jar.delete(COOKIE);
+  jar.delete(SESSION_COOKIE);
 }
 
 export async function readUserIdFromCookie(): Promise<string | null> {
   const jar = await cookies();
-  const token = jar.get(COOKIE)?.value;
+  const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret());

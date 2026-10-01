@@ -86,7 +86,7 @@ export async function createAnalise(options: {
     result = await load(videoId, options.actor.limits.commentsPerVideo);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao buscar comentários.";
-    const status = /não encontrado|nao encontrado|desativados/i.test(message) ? 400 : 502;
+    const status = /não encontrado|nao encontrado|privado|inexistente|desativados/i.test(message) ? 400 : 502;
     throw new AnaliseHttpError(message, status);
   }
 

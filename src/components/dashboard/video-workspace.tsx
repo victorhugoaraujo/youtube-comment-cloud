@@ -178,7 +178,8 @@ export function VideoWorkspace({
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Analisar comentários</h1>
         <p className="text-muted-foreground">
-          Cole a URL de um vídeo público do YouTube com comentários ligados.
+          Cole a URL ou o ID de um vídeo longo público. A Análise abre nesse vídeo, com ou sem
+          comentários.
         </p>
       </div>
 
@@ -202,7 +203,7 @@ export function VideoWorkspace({
         loading={loading}
         analyzed={Boolean(video)}
         source={source}
-        placeholder="https://www.youtube.com/watch?v=..."
+        placeholder="URL ou ID de um vídeo longo"
       />
 
       {loading && (
@@ -230,7 +231,7 @@ export function VideoWorkspace({
                 )}
               </div>
               <h2 className="font-semibold">{video.title}</h2>
-              <p className="text-sm text-muted-foreground">{video.channelName}</p>
+              <p className="text-sm text-muted-foreground">Publicado por {video.channelName}</p>
               <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
                   <Eye className="size-4" />

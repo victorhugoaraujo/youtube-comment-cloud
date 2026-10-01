@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { PLAN_LIMITS, type PlanId } from "./plans";
 import { createAnalise } from "./analise";
 import { AnaliseHttpError } from "./video-alvo";
@@ -5,6 +6,7 @@ import { assertCanManageBilling, assertCanManageMembros } from "./access";
 import type { SessionUser } from "./auth";
 import type { Comment, VideoInfo } from "@/types";
 import type { FetchedComments } from "./youtube";
+import { POST as openAnalise } from "@/app/api/comments/route";
 
 function assert(cond: boolean, message: string) {
   if (!cond) throw new Error(message);
@@ -73,7 +75,13 @@ function fetched(over: Partial<FetchedComments> = {}): FetchedComments {
 
 function memoryStore() {
   let used = 0;
-  const analyses: Array<{ videoId: string; youtubeCommentTotal: number; ingestedCount: number }> = [];
+  const analyses: Array<{
+    id: string;
+    billingOwnerId: string;
+    videoId: string;
+    youtubeCommentTotal: number;
+    ingestedCount: number;
+  }> = [];
   return {
     used: () => used,
     analyses,
@@ -82,16 +90,86 @@ function memoryStore() {
         used += 1;
         return used;
       },
-      async createAnalysis(input: { video: VideoInfo; youtubeCommentTotal: number; ingestedCount: number }) {
+      async createAnalysis(input: {
+        billingOwnerId: string;
+        video: VideoInfo;
+        youtubeCommentTotal: number;
+        ingestedCount: number;
+      }) {
+        const id = `analysis-${input.billingOwnerId}-${analyses.length + 1}`;
         analyses.push({
+          id,
+          billingOwnerId: input.billingOwnerId,
           videoId: input.video.id,
           youtubeCommentTotal: input.youtubeCommentTotal,
           ingestedCount: input.ingestedCount,
         });
-        return "analysis-1";
+        return id;
       },
     },
   };
+}
+
+const PUBLISHER = "Quem Publicou";
+const VIDEO_TITLE = "Como gravar um vídeo longo";
+const THUMBNAIL = "https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg";
+
+function youtubeVideoList(over: {
+  title?: string;
+  channelTitle?: string;
+  thumbnail?: string;
+  duration?: string;
+  privacyStatus?: string;
+  commentCount?: string;
+  liveChatId?: string | null;
+  actualEndTime?: string | null;
+} = {}) {
+  return {
+    items: [
+      {
+        id: "abcdefghijk",
+        snippet: {
+          title: over.title ?? VIDEO_TITLE,
+          channelTitle: over.channelTitle ?? PUBLISHER,
+          channelId: "UC-outro",
+          publishedAt: "2024-01-02T00:00:00Z",
+          thumbnails: { high: { url: over.thumbnail ?? THUMBNAIL } },
+        },
+        statistics: { commentCount: over.commentCount ?? "0", viewCount: "3400" },
+        contentDetails: { duration: over.duration ?? "PT12M30S" },
+        status: { privacyStatus: over.privacyStatus ?? "public" },
+        liveStreamingDetails: {
+          activeLiveChatId: over.liveChatId ?? undefined,
+          actualEndTime: over.actualEndTime ?? undefined,
+        },
+      },
+    ],
+  };
+}
+
+async function withYoutubeFetch(
+  handler: (url: URL) => { status: number; body: unknown },
+  run: () => Promise<void>,
+) {
+  const previousFetch = globalThis.fetch;
+  const previousKey = process.env.YOUTUBE_API_KEY;
+  process.env.YOUTUBE_API_KEY = "test-key";
+  globalThis.fetch = async (input: RequestInfo | URL) => {
+    const href =
+      typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const result = handler(new URL(href));
+    return new Response(JSON.stringify(result.body), {
+      status: result.status,
+      headers: { "content-type": "application/json" },
+    });
+  };
+  try {
+    await run();
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousKey === undefined) delete process.env.YOUTUBE_API_KEY;
+    else process.env.YOUTUBE_API_KEY = previousKey;
+  }
 }
 
 async function expectError(fn: () => Promise<unknown>, status: number, snippet: string) {
@@ -286,6 +364,286 @@ await expectError(
   });
   assert(empty.ingestedCount === 0 && empty.youtubeCommentTotal === 0, "zero comments is success");
   assert(mem.used() === 1, "zero-comment Análise spends Limite");
+}
+
+{
+  const mem = memoryStore();
+  await withYoutubeFetch(
+    (url) => {
+      if (url.pathname.endsWith("/videos")) return { status: 200, body: youtubeVideoList() };
+      return {
+        status: 403,
+        body: { error: { errors: [{ reason: "commentsDisabled" }], message: "comments disabled" } },
+      };
+    },
+    async () => {
+      const opened = await createAnalise({
+        actor: actor("pro"),
+        url: "https://www.youtube.com/watch?v=abcdefghijk",
+        store: mem.store,
+      });
+      assert(opened.video.title === VIDEO_TITLE, "mostra o título");
+      assert(opened.video.channelName === PUBLISHER, "mostra quem publicou");
+      assert(opened.video.thumbnailUrl === THUMBNAIL, "mostra a miniatura");
+      assert(opened.ingestedCount === 0, "comentários desabilitados não trazem Comentários");
+      assert(mem.analyses.length === 1, "comentários desabilitados criam Análise");
+      assert(mem.used() === 1, "comentários desabilitados gastam Limite");
+    },
+  );
+}
+
+{
+  const mem = memoryStore();
+  await withYoutubeFetch(
+    (url) => {
+      if (url.pathname.endsWith("/videos")) {
+        return { status: 200, body: youtubeVideoList({ privacyStatus: "private" }) };
+      }
+      return {
+        status: 200,
+        body: {
+          items: [
+            {
+              id: "thread-1",
+              snippet: {
+                totalReplyCount: 0,
+                topLevelComment: {
+                  id: "c1",
+                  snippet: { textOriginal: "oi", likeCount: 0, publishedAt: "2024-01-02T00:00:00Z" },
+                },
+              },
+            },
+          ],
+        },
+      };
+    },
+    async () => {
+      await expectError(
+        () =>
+          createAnalise({
+            actor: actor("pro"),
+            url: "https://www.youtube.com/watch?v=abcdefghijk",
+            store: mem.store,
+          }),
+        400,
+        "privado",
+      );
+      assert(mem.used() === 0, "vídeo privado não gasta Limite");
+      assert(mem.analyses.length === 0, "vídeo privado não cria Análise");
+    },
+  );
+}
+
+{
+  const mem = memoryStore();
+  await withYoutubeFetch(
+    (url) => {
+      if (url.pathname.endsWith("/videos")) return { status: 200, body: { items: [] } };
+      return { status: 200, body: { items: [] } };
+    },
+    async () => {
+      await expectError(
+        () =>
+          createAnalise({
+            actor: actor("pro"),
+            url: "https://www.youtube.com/watch?v=abcdefghijk",
+            store: mem.store,
+          }),
+        400,
+        "encontrado",
+      );
+      assert(mem.used() === 0, "vídeo inexistente não gasta Limite");
+      assert(mem.analyses.length === 0, "vídeo inexistente não cria Análise");
+    },
+  );
+}
+
+{
+  const mem = memoryStore();
+  await withYoutubeFetch(
+    () => ({ status: 500, body: "upstream" }),
+    async () => {
+      await expectError(
+        () =>
+          createAnalise({
+            actor: actor("pro"),
+            url: "https://www.youtube.com/watch?v=abcdefghijk",
+            store: mem.store,
+          }),
+        502,
+        "falhou",
+      );
+      assert(mem.used() === 0, "falha da API não gasta Limite");
+      assert(mem.analyses.length === 0, "falha da API não cria Análise");
+    },
+  );
+}
+
+{
+  const mem = memoryStore();
+  await withYoutubeFetch(
+    (url) => {
+      if (url.pathname.endsWith("/videos")) return { status: 200, body: youtubeVideoList() };
+      return {
+        status: 403,
+        body: { error: { errors: [{ reason: "quotaExceeded" }], message: "quota" } },
+      };
+    },
+    async () => {
+      await expectError(
+        () =>
+          createAnalise({
+            actor: actor("pro"),
+            url: "https://www.youtube.com/watch?v=abcdefghijk",
+            store: mem.store,
+          }),
+        502,
+        "cota",
+      );
+      assert(mem.used() === 0, "cota da API não gasta Limite");
+      assert(mem.analyses.length === 0, "cota da API não cria Análise");
+    },
+  );
+}
+
+{
+  const mem = memoryStore();
+  await withYoutubeFetch(
+    (url) => {
+      if (url.pathname.endsWith("/videos")) {
+        return { status: 200, body: youtubeVideoList({ duration: "PT45S" }) };
+      }
+      return {
+        status: 403,
+        body: { error: { errors: [{ reason: "commentsDisabled" }], message: "comments disabled" } },
+      };
+    },
+    async () => {
+      await expectError(
+        () =>
+          createAnalise({
+            actor: actor("pro"),
+            url: "https://www.youtube.com/watch?v=abcdefghijk",
+            store: mem.store,
+          }),
+        400,
+        "short",
+      );
+      assert(mem.used() === 0, "Short com comentários desabilitados não gasta Limite");
+      assert(mem.analyses.length === 0, "Short com comentários desabilitados não cria Análise");
+    },
+  );
+}
+
+{
+  const mem = memoryStore();
+  await withYoutubeFetch(
+    (url) => {
+      if (url.pathname.endsWith("/videos")) {
+        return { status: 200, body: youtubeVideoList({ liveChatId: "chat-ao-vivo" }) };
+      }
+      return {
+        status: 403,
+        body: { error: { errors: [{ reason: "commentsDisabled" }], message: "comments disabled" } },
+      };
+    },
+    async () => {
+      await expectError(
+        () =>
+          createAnalise({
+            actor: actor("pro"),
+            url: "https://www.youtube.com/watch?v=abcdefghijk",
+            store: mem.store,
+          }),
+        400,
+        "live",
+      );
+      assert(mem.used() === 0, "Live não gasta Limite");
+      assert(mem.analyses.length === 0, "Live não cria Análise");
+    },
+  );
+}
+
+{
+  const mem = memoryStore();
+  await withYoutubeFetch(
+    (url) => {
+      if (url.pathname.endsWith("/videos")) {
+        return { status: 200, body: youtubeVideoList({ commentCount: "3" }) };
+      }
+      return { status: 200, body: { items: [] } };
+    },
+    async () => {
+      const opened = await createAnalise({
+        actor: actor("pro", 0, { id: "conta-a", billingOwnerId: "conta-a" }),
+        url: "abcdefghijk",
+        store: mem.store,
+      });
+      assert(opened.video.title === VIDEO_TITLE, "ID mostra o título");
+      assert(opened.video.channelName === PUBLISHER, "ID mostra quem publicou");
+      assert(opened.video.thumbnailUrl === THUMBNAIL, "ID mostra a miniatura");
+      assert(opened.video.channelName !== "Criador", "não confere dono do canal");
+      assert(mem.analyses.length === 1, "ID de vídeo longo cria Análise");
+      assert(mem.analyses[0].billingOwnerId === "conta-a", "Análise fica na conta que abriu");
+    },
+  );
+}
+
+{
+  const fetchImpl = async () =>
+    fetched({
+      video: fakeVideo({
+        title: VIDEO_TITLE,
+        channelName: PUBLISHER,
+        thumbnailUrl: THUMBNAIL,
+        commentCount: 4,
+      }),
+    });
+  const memA = memoryStore();
+  const memB = memoryStore();
+  const a = await createAnalise({
+    actor: actor("pro", 0, { id: "conta-a", billingOwnerId: "conta-a" }),
+    url: "https://www.youtube.com/watch?v=abcdefghijk",
+    fetchCommentsImpl: fetchImpl,
+    store: memA.store,
+  });
+  const b = await createAnalise({
+    actor: actor("free", 0, { id: "conta-b", billingOwnerId: "conta-b", email: "outra@example.com" }),
+    url: "abcdefghijk",
+    fetchCommentsImpl: fetchImpl,
+    store: memB.store,
+  });
+  assert(a.video.id === b.video.id, "as duas contas abrem o mesmo Vídeo alvo");
+  assert(a.analysisId !== b.analysisId, "cada conta fica com a sua Análise");
+  assert(memA.used() === 1 && memB.used() === 1, "cada conta gasta o próprio Limite");
+  assert(memA.analyses[0].billingOwnerId === "conta-a", "Análise da conta A");
+  assert(memB.analyses[0].billingOwnerId === "conta-b", "Análise da conta B");
+}
+
+{
+  const previousFetch = globalThis.fetch;
+  const previousKey = process.env.YOUTUBE_API_KEY;
+  let pullStarted = false;
+  process.env.YOUTUBE_API_KEY = "test-key";
+  globalThis.fetch = async () => {
+    pullStarted = true;
+    return new Response("no", { status: 500 });
+  };
+  try {
+    const res = await openAnalise(
+      new NextRequest("http://localhost/api/comments", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: "https://www.youtube.com/watch?v=abcdefghijk" }),
+      }),
+    );
+    assert(res.status === 401, `sem sessão responde 401, veio ${res.status}`);
+    assert(!pullStarted, "sem sessão a puxada não começa");
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousKey === undefined) delete process.env.YOUTUBE_API_KEY;
+    else process.env.YOUTUBE_API_KEY = previousKey;
+  }
 }
 
 console.log("analise checks passed");

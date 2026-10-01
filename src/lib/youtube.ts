@@ -6,32 +6,54 @@ import type { Comment, VideoInfo } from "@/types";
 
 const YT = "https://www.googleapis.com/youtube/v3";
 
-async function youtubeError(res: Response, fallback: string): Promise<Error> {
+export class YoutubeRequestError extends Error {
+  readonly reason: string | null;
+  readonly status: number;
+
+  constructor(message: string, status: number, reason: string | null) {
+    super(message);
+    this.name = "YoutubeRequestError";
+    this.status = status;
+    this.reason = reason;
+  }
+}
+
+async function youtubeError(res: Response, fallback: string): Promise<YoutubeRequestError> {
   const text = await res.text();
   try {
     const json = JSON.parse(text) as {
       error?: { message?: string; errors?: Array<{ reason?: string }> };
     };
-    const reason = json.error?.errors?.[0]?.reason;
+    const reason = json.error?.errors?.[0]?.reason ?? null;
     if (reason === "commentsDisabled") {
-      return new Error("Este vídeo está com os comentários desativados no YouTube.");
+      return new YoutubeRequestError(
+        "Este vídeo está com os comentários desativados no YouTube.",
+        res.status,
+        reason,
+      );
     }
     if (reason === "quotaExceeded") {
-      return new Error("A cota diária da YouTube API esgotou. Tente de novo amanhã.");
+      return new YoutubeRequestError(
+        "A cota diária da YouTube API esgotou. Tente de novo amanhã.",
+        res.status,
+        reason,
+      );
     }
     if (reason === "keyInvalid" || reason === "ipRefererBlocked") {
-      return new Error(
+      return new YoutubeRequestError(
         "YOUTUBE_API_KEY recusada. No Google Cloud, ative YouTube Data API v3 e tire restrição de IP (a Vercel muda de IP).",
+        res.status,
+        reason,
       );
     }
     if (reason === "videoNotFound" || res.status === 404) {
-      return new Error("Vídeo não encontrado. Use um vídeo público.");
+      return new YoutubeRequestError("Vídeo não encontrado. Use um vídeo público.", res.status, reason);
     }
-    if (json.error?.message) return new Error(json.error.message);
+    if (json.error?.message) return new YoutubeRequestError(json.error.message, res.status, reason);
   } catch {
     /* use fallback */
   }
-  return new Error(`${fallback} (${res.status})`);
+  return new YoutubeRequestError(`${fallback} (${res.status})`, res.status, null);
 }
 
 export function parseVideoId(input: string): string | null {
@@ -69,6 +91,7 @@ interface YtVideo {
   };
   statistics?: { commentCount?: string; viewCount?: string };
   contentDetails?: { duration?: string };
+  status?: { privacyStatus?: string };
   liveStreamingDetails?: {
     activeLiveChatId?: string;
     actualStartTime?: string;
@@ -152,7 +175,7 @@ export async function fetchVideoMeta(videoId: string): Promise<{
   }
 
   const url = new URL(`${YT}/videos`);
-  url.searchParams.set("part", "snippet,statistics,liveStreamingDetails,contentDetails");
+  url.searchParams.set("part", "snippet,statistics,liveStreamingDetails,contentDetails,status");
   url.searchParams.set("id", videoId);
   url.searchParams.set("key", key);
 
@@ -161,11 +184,14 @@ export async function fetchVideoMeta(videoId: string): Promise<{
   const data = (await res.json()) as { items?: YtVideo[] };
   const item = data.items?.[0];
   if (!item) throw new Error("Vídeo não encontrado");
+  if (item.status?.privacyStatus === "private") {
+    throw new Error("Este vídeo é privado. Cole um vídeo público.");
+  }
 
   const thumb =
     item.snippet?.thumbnails?.high?.url ||
     item.snippet?.thumbnails?.medium?.url ||
-    "";
+    `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 
   return {
     source: "youtube",
@@ -222,7 +248,20 @@ export async function fetchComments(
     if (pageToken) url.searchParams.set("pageToken", pageToken);
 
     const res = await fetch(url);
-    if (!res.ok) throw await youtubeError(res, "YouTube commentThreads.list falhou");
+    if (!res.ok) {
+      const error = await youtubeError(res, "YouTube commentThreads.list falhou");
+      if (error.reason === "commentsDisabled") {
+        return {
+          video: meta.video,
+          comments: [],
+          source: "youtube",
+          truncated: false,
+          duration: meta.duration,
+          liveEnded: meta.liveEnded,
+        };
+      }
+      throw error;
+    }
     const data = (await res.json()) as {
       items?: YtCommentThread[];
       nextPageToken?: string;
