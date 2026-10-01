@@ -8,6 +8,7 @@ export interface AnaliseSnapshot {
   source: "youtube" | "demo";
   youtubeCommentTotal: number;
   ingestedCount: number;
+  truncated?: boolean;
   analisesUsedMonth: number;
   filters: CommentFilters;
   summary: string | null;

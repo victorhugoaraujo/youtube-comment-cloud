@@ -21,9 +21,17 @@ interface FiltersBarProps {
   filters: CommentFilters;
   onChange: (filters: CommentFilters) => void;
   resultCount: number;
+  showSentimentFilter?: boolean;
+  showQuestionsOnly?: boolean;
 }
 
-export function FiltersBar({ filters, onChange, resultCount }: FiltersBarProps) {
+export function FiltersBar({
+  filters,
+  onChange,
+  resultCount,
+  showSentimentFilter = true,
+  showQuestionsOnly = true,
+}: FiltersBarProps) {
   function update(partial: Partial<CommentFilters>) {
     onChange({ ...filters, ...partial });
   }
@@ -46,21 +54,23 @@ export function FiltersBar({ filters, onChange, resultCount }: FiltersBarProps) 
           />
         </div>
 
-        <Select
-          value={filters.sentiment}
-          onValueChange={(v) => update({ sentiment: v as Sentiment | "all" })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Sentimento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os sentimentos</SelectItem>
-            <SelectItem value="positive">Positivo</SelectItem>
-            <SelectItem value="negative">Negativo</SelectItem>
-            <SelectItem value="question">Pergunta</SelectItem>
-            <SelectItem value="spam">Spam</SelectItem>
-          </SelectContent>
-        </Select>
+        {showSentimentFilter && (
+          <Select
+            value={filters.sentiment}
+            onValueChange={(v) => update({ sentiment: v as Sentiment | "all" })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sentimento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os sentimentos</SelectItem>
+              <SelectItem value="positive">Positivo</SelectItem>
+              <SelectItem value="negative">Negativo</SelectItem>
+              <SelectItem value="question">Pergunta</SelectItem>
+              <SelectItem value="spam">Spam</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
 
         <Select
           value={filters.sortBy}
@@ -95,18 +105,20 @@ export function FiltersBar({ filters, onChange, resultCount }: FiltersBarProps) 
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => update({ questionsOnly: !filters.questionsOnly })}
-          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-            filters.questionsOnly
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-background hover:bg-muted"
-          }`}
-        >
-          <MessageCircleQuestion className="size-3.5" />
-          Apenas perguntas
-        </button>
+        {showQuestionsOnly && (
+          <button
+            type="button"
+            onClick={() => update({ questionsOnly: !filters.questionsOnly })}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              filters.questionsOnly
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-background hover:bg-muted"
+            }`}
+          >
+            <MessageCircleQuestion className="size-3.5" />
+            Apenas perguntas
+          </button>
+        )}
 
         <button
           type="button"

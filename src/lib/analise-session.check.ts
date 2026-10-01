@@ -33,6 +33,7 @@ const snapshot: AnaliseSnapshot = {
   source: "youtube",
   youtubeCommentTotal: 10,
   ingestedCount: 1,
+  truncated: true,
   analisesUsedMonth: 2,
   filters: { ...DEFAULT_FILTERS, search: "gostei" },
   summary: "A audiência gostou.",
@@ -46,6 +47,7 @@ assert(restored?.comments.length === 1, "comments survive");
 assert(restored?.filters.search === "gostei", "filters survive");
 assert(restored?.summary === "A audiência gostou.", "summary survives");
 assert(restored?.youtubeCommentTotal === 10 && restored?.ingestedCount === 1, "both counts survive");
+assert(restored?.truncated === true, "incomplete pull survives");
 assert(parseAnaliseSnapshot(null) === null, "empty storage");
 assert(parseAnaliseSnapshot("{") === null, "broken json");
 assert(parseAnaliseSnapshot(JSON.stringify({ v: 1, snapshot: { video: {} } })) === null, "incomplete snapshot");
