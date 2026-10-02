@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Protótipo — a leitura que continua</title>
+  <style>
+    :root {
+      --ink: #1c1915;
+      --muted: #5c564c;
+      --line: #e4dfd6;
+      --paper: #f6f4ef;
+      --card: #fffcf7;
+      --accent: #1f4b3a;
+      --accent-soft: #e5f0ea;
+      --warn: #8a4b12;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.45;
+    }
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      margin: 0 0 12px;
+    }
+    h2 {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 36px 0 12px;
+      color: var(--muted);
+    }
+    p { margin: 0 0 12px; }
+    .lede { font-size: 18px; max-width: 68ch; }
+    .note { color: var(--muted); font-size: 15px; max-width: 68ch; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .frase {
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 24px;
+    }
+    .field .k {
+      display: block;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .field .v { font-size: 16px; }
+    .temas { list-style: none; padding: 0; margin: 14px 0 0; }
+    .temas li {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 8px 0;
+      border-top: 1px solid var(--line);
+      font-size: 15px;
+    }
+    .mudou {
+      margin-top: 14px;
+      padding: 10px 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 10px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 14px;
+    }
+    .buttons, .steps { display: flex; flex-wrap: wrap; gap: 8px; }
+    button {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 14px;
+      color: var(--ink);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    button:disabled { opacity: 0.4; cursor: default; }
+    button.now {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    button.done { background: var(--accent-soft); border-color: transparent; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .tabs button.on { border-color: var(--accent); color: var(--accent); }
+    .scenario p { max-width: 68ch; }
+    .tag {
+      display: inline-block;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--warn);
+      margin-bottom: 8px;
+    }
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="tag">Protótipo descartável · lógica, não tela</p>
+    <h1>A leitura que continua</h1>
+    <p class="lede">Uma pessoa pagaria para ser avisada quando o que está sendo dito nos comentários de um vídeo mudou, sem colar os comentários de novo?</p>
+    <p class="note">Este arquivo não é o produto. A premissa é o modelo de estados: quando a leitura abre, quando fala, quando cala e quando recusa. A nuvem pode ser a tela disso depois. O que importa agora é onde a frase soa errada.</p>
+
+    <h2>Estado agora</h2>
+    <section class="panel" id="estado"></section>
+
+    <h2>Livre</h2>
+    <p class="note">Qualquer botão, em qualquer ordem. O estado acima muda a cada clique.</p>
+    <div class="buttons" id="livre"></div>
+
+    <h2>Casos</h2>
+    <div class="tabs" id="abas"></div>
+    <section class="scenario panel" id="caso"></section>
+  </main>
+
+  <script id="leitura-module">
+    /**
+     * Leitura contínua de um Vídeo alvo.
+     * Módulo puro: sem DOM. A página só chama blank() e reduce().
+     */
+    const LeituraContinua = (() => {
+      const TEMAS_INICIAIS = [
+        { nome: "Microfone", massa: 30, trecho: "qual microfone você usa?" },
+        { nome: "Edição", massa: 18, trecho: "como você corta o começo?" },
+        { nome: "Equipamento", massa: 12, trecho: "essa câmera vale a pena?" },
+      ];
+
+      function copiarTemas(temas) {
+        return temas.map((tema) => ({ ...tema }));
+      }
+
+      function blank() {
+        return {
+          video: null,
+          leituraAberta: false,
+          cliente: false,
+          motivoCliente: "Nenhuma URL ainda.",
+          oQueEstaSendoDito: [],
+          movimento: "sem_leitura",
+          frase: "Cole a URL de um vídeo público.",
+          vezesQueFalou: 0,
+          vezesQueCalou: 0,
+          comentariosNovosDesdeAUltimaFala: 0,
+          roteiro: "fora",
+          mudanca: null,
+        };
+      }
+
+      function descreverVideo(tipo) {
+        if (tipo === "pequeno_parado") {
+          return {
+            tipo,
+            titulo: "Um minuto no parque",
+            deQuem: "de outra pessoa",
+            aindaChegando: false,
+            cabeNaColagem: true,
+          };
+        }
+        if (tipo === "grande_parado") {
+          return {
+            tipo,
+            titulo: "Review do ano",
+            deQuem: "de outra pessoa",
+            aindaChegando: false,
+            cabeNaColagem: false,
+          };
+        }
+        return {
+          tipo: "grande_chegando",
+          titulo: "Como eu gravei o último vídeo",
+          deQuem: "de outra pessoa",
+          aindaChegando: true,
+          cabeNaColagem: false,
+        };
+      }
+
+      function abrir(state, tipoPedido) {
+        let tipo = tipoPedido;
+        if (tipo === "mesma") {
+          if (!state.video) {
+            return {
+              ...state,
+              movimento: "recusou",
+              frase: "Não há URL ainda para colar de novo.",
+              roteiro: "fora",
+            };
+          }
+          tipo = state.video.tipo;
+        }
+        const video = descreverVideo(tipo);
+        const mesmo =
+          state.video &&
+          state.video.titulo === video.titulo &&
+          (state.leituraAberta || state.video.tipo === tipo);
+        if (mesmo && state.video.titulo === video.titulo && state.leituraAberta) {
+          return {
+            ...state,
+            movimento: "continuou",
+            frase: "É a mesma URL. A leitura continua. Não é uma foto nova.",
+            roteiro: "fora",
+          };
+        }
+        if (mesmo && state.video && !state.leituraAberta) {
+          return {
+            ...state,
+            video,
+            movimento: "continuou",
+            frase: "É a mesma URL, e a leitura continua fechada. Colar de novo não cria uma vigília.",
+            roteiro: "fora",
+          };
+        }
+        if (!video.aindaChegando) {
+          const pequeno = video.cabeNaColagem;
+          return {
+            ...blank(),
+            video,
+            leituraAberta: false,
+            cliente: false,
+            motivoCliente: pequeno
+              ? "Vídeo pequeno e parado. Uma olhada: o chat basta. Não é cliente."
+              : "Vídeo grande, mas já parou. Uma foto única. Sem a próxima chegada, não há o que cobrar.",
+            oQueEstaSendoDito: copiarTemas(TEMAS_INICIAIS),
+            movimento: "recusou",
+            frase: pequeno
+              ? "Não abri uma leitura. Este vídeo já disse o que tinha para dizer, e cabe numa colagem."
+              : "Mostro o que está sendo dito nesta foto, e paro. Não fico vigiando um vídeo que não recebe mais comentários.",
+            roteiro: "fora",
+          };
+        }
+        return {
+          ...blank(),
+          video,
+          leituraAberta: true,
+          cliente: true,
+          motivoCliente: "Os comentários ainda estão chegando. A URL foi colada uma vez e a leitura fica.",
+          oQueEstaSendoDito: copiarTemas(TEMAS_INICIAIS),
+          movimento: "abriu",
+          frase: "Primeira leitura. O que está sendo dito: Microfone, Edição, Equipamento. Sem roteiro.",
+          roteiro: "fora",
+        };
+      }
+
+      function chegar(state, tipo) {
+        if (!state.video) {
+          return {
+            ...state,
+            movimento: "recusou",
+            frase: "Não há vídeo. Cole uma URL antes.",
+            roteiro: "fora",
+          };
+        }
+        if (!state.leituraAberta) {
+          return {
+            ...state,
+            movimento: "recusou",
+            frase: "Esta URL não tem leitura aberta. Não há chegada nova para vigiar.",
+            roteiro: "fora",
+          };
+        }
+        if (tipo === "igual") {
+          return {
+            ...state,
+            movimento: "calou",
+            vezesQueCalou: state.vezesQueCalou + 1,
+            comentariosNovosDesdeAUltimaFala: state.comentariosNovosDesdeAUltimaFala + 40,
+            frase: "Chegaram comentários sobre o microfone, de novo. O que está sendo dito não mudou. A leitura cala.",
+            roteiro: "fora",
+          };
+        }
+        if (tipo === "ruido") {
+          return {
+            ...state,
+            movimento: "calou",
+            vezesQueCalou: state.vezesQueCalou + 1,
+            comentariosNovosDesdeAUltimaFala: state.comentariosNovosDesdeAUltimaFala + 80,
+            frase: "Chegaram elogios vazios e spam. Isso não informa. A leitura cala.",
+            roteiro: "fora",
+          };
+        }
+        if (tipo === "novo") {
+          const temas = state.oQueEstaSendoDito.filter((tema) => tema.nome !== "Imposto");
+          temas.push({
+            nome: "Imposto",
+            massa: 22,
+            trecho: "faz um vídeo sobre imposto de quem faz vídeo",
+          });
+          return {
+            ...state,
+            oQueEstaSendoDito: temas,
+            movimento: "falou",
+            vezesQueFalou: state.vezesQueFalou + 1,
+            comentariosNovosDesdeAUltimaFala: 0,
+            frase:
+              "O que está sendo dito mudou. Imposto ganhou massa: 22 comentários. Trecho: “faz um vídeo sobre imposto de quem faz vídeo”.",
+            mudanca: "Imposto ganhou massa",
+            roteiro: "fora",
+          };
+        }
+        const temas = state.oQueEstaSendoDito
+          .map((tema) => (tema.nome === "Microfone" ? { ...tema, massa: 4 } : tema))
+          .filter((tema) => tema.massa >= 10);
+        if (!temas.some((tema) => tema.nome === "Na câmera")) {
+          temas.push({ nome: "Na câmera", massa: 28, trecho: "você lê ou improvisa?" });
+        }
+        return {
+          ...state,
+          oQueEstaSendoDito: temas,
+          movimento: "falou",
+          vezesQueFalou: state.vezesQueFalou + 1,
+          comentariosNovosDesdeAUltimaFala: 0,
+          frase:
+            "O que dominava caiu. Microfone saiu da massa. “Na câmera” passou a ser dito. A leitura fala essa troca, e não escreve um roteiro.",
+          mudanca: "Microfone caiu; Na câmera subiu",
+          roteiro: "fora",
+        };
+      }
+
+      function pedirRoteiro(state) {
+        return {
+          ...state,
+          movimento: "recusou",
+          roteiro: "recusado",
+          frase: "Roteiro não é o serviço. A leitura só diz o que está sendo dito, e quando isso muda.",
+        };
+      }
+
+      function abrirDeNovo(state) {
+        if (!state.leituraAberta) {
+          return {
+            ...state,
+            movimento: "recusou",
+            frase: state.video
+              ? "Não há leitura aberta para o dia seguinte."
+              : "Não há leitura para reabrir.",
+            roteiro: "fora",
+          };
+        }
+        return {
+          ...state,
+          movimento: "reabriu",
+          frase: state.mudanca
+            ? "No dia seguinte a leitura é a mesma. O último aviso continua: " + state.mudanca + "."
+            : "No dia seguinte a leitura é a mesma. Nada mudou desde a última fala, então não há aviso novo.",
+          roteiro: "fora",
+        };
+      }
+
+      function reduce(state, action) {
+        if (action.type === "colar") return abrir(state, action.video);
+        if (action.type === "chegar") return chegar(state, action.comentarios);
+        if (action.type === "pedir_roteiro") return pedirRoteiro(state);
+        if (action.type === "abrir_de_novo") return abrirDeNovo(state);
+        if (action.type === "reset") return blank();
+        return state;
+      }
+
+      return { blank, reduce };
+    })();
+    globalThis.LeituraContinua = LeituraContinua;
+  </script>
+
+  <script>
+    const LIVRE = [
+      { rotulo: "Colar vídeo pequeno já parado", action: { type: "colar", video: "pequeno_parado" } },
+      { rotulo: "Colar vídeo grande que ainda recebe comentários", action: { type: "colar", video: "grande_chegando" } },
+      { rotulo: "Colar vídeo grande já parado", action: { type: "colar", video: "grande_parado" } },
+      { rotulo: "Colar a mesma URL de novo", action: { type: "colar", video: "mesma" } },
+      { rotulo: "Chegaram comentários do que já era dito", action: { type: "chegar", comentarios: "igual" } },
+      { rotulo: "Chegou ruído", action: { type: "chegar", comentarios: "ruido" } },
+      { rotulo: "Um assunto novo ganhou massa", action: { type: "chegar", comentarios: "novo" } },
+      { rotulo: "O assunto que dominava caiu", action: { type: "chegar", comentarios: "caiu" } },
+      { rotulo: "Pedir um roteiro", action: { type: "pedir_roteiro" } },
+      { rotulo: "Abrir de novo no dia seguinte", action: { type: "abrir_de_novo" } },
+    ];
+
+    const CASOS = [
+      {
+        id: "muda",
+        titulo: "A conversa muda",
+        texto: "Você cola a URL de um vídeo grande, de outra pessoa, que ainda recebe comentários. A primeira leitura mostra o que está sendo dito e não escreve roteiro. Comentários repetidos não geram aviso. Um assunto novo, com massa, faz a leitura falar. No dia seguinte é a mesma leitura.",
+        passos: [
+          { rotulo: "Colar a URL do vídeo que ainda recebe comentários", action: { type: "colar", video: "grande_chegando" } },
+          { rotulo: "Chegam comentários do que já era dito", action: { type: "chegar", comentarios: "igual" } },
+          { rotulo: "Um assunto novo ganha massa", action: { type: "chegar", comentarios: "novo" } },
+          { rotulo: "Abrir de novo no dia seguinte", action: { type: "abrir_de_novo" } },
+        ],
+      },
+      {
+        id: "cala",
+        titulo: "Chegou gente e não mudou nada",
+        texto: "A leitura está aberta. Chega ruído e chegam mais comentários do assunto que já dominava. A leitura cala nas duas vezes. Se ela falasse aqui, a ideia estaria errada: seria outra foto barulhenta.",
+        passos: [
+          { rotulo: "Colar a URL do vídeo que ainda recebe comentários", action: { type: "colar", video: "grande_chegando" } },
+          { rotulo: "Chega ruído", action: { type: "chegar", comentarios: "ruido" } },
+          { rotulo: "Chegam mais comentários do microfone", action: { type: "chegar", comentarios: "igual" } },
+        ],
+      },
+      {
+        id: "pequeno",
+        titulo: "Vídeo pequeno já parado",
+        texto: "Cabe numa colagem e ninguém mais vai comentar. A leitura não abre. Uma chegada nova não tem onde cair. O roteiro também não.",
+        passos: [
+          { rotulo: "Colar a URL do vídeo pequeno parado", action: { type: "colar", video: "pequeno_parado" } },
+          { rotulo: "Tentar receber comentários novos", action: { type: "chegar", comentarios: "novo" } },
+          { rotulo: "Pedir um roteiro", action: { type: "pedir_roteiro" } },
+        ],
+      },
+      {
+        id: "grande-parado",
+        titulo: "Vídeo grande já parado",
+        texto: "Não cabe numa colagem, mas a conversa acabou. O modelo mostra a foto e para. Não cobra vigília. Veja se isso parece honesto ou se a foto única já seria o que alguém pagaria.",
+        passos: [
+          { rotulo: "Colar a URL do vídeo grande parado", action: { type: "colar", video: "grande_parado" } },
+          { rotulo: "Tentar vigiar uma chegada nova", action: { type: "chegar", comentarios: "novo" } },
+          { rotulo: "Abrir no dia seguinte", action: { type: "abrir_de_novo" } },
+        ],
+      },
+      {
+        id: "roteiro",
+        titulo: "Pedir roteiro",
+        texto: "A leitura está aberta e o assunto está claro. O pedido de roteiro é recusado. O que está sendo dito não vira serviço de escrita, nem depois que a conversa muda.",
+        passos: [
+          { rotulo: "Colar a URL do vídeo que ainda recebe comentários", action: { type: "colar", video: "grande_chegando" } },
+          { rotulo: "Pedir um roteiro", action: { type: "pedir_roteiro" } },
+          { rotulo: "Um assunto novo ganha massa", action: { type: "chegar", comentarios: "novo" } },
+          { rotulo: "Pedir o roteiro de novo", action: { type: "pedir_roteiro" } },
+        ],
+      },
+      {
+        id: "mesma",
+        titulo: "A mesma URL de novo",
+        texto: "Colar a URL outra vez não abre uma segunda foto. A leitura que já existe continua, com o aviso que ela já deu.",
+        passos: [
+          { rotulo: "Colar a URL do vídeo que ainda recebe comentários", action: { type: "colar", video: "grande_chegando" } },
+          { rotulo: "Um assunto novo ganha massa", action: { type: "chegar", comentarios: "novo" } },
+          { rotulo: "Colar a mesma URL de novo", action: { type: "colar", video: "mesma" } },
+          { rotulo: "Abrir de novo no dia seguinte", action: { type: "abrir_de_novo" } },
+        ],
+      },
+    ];
+
+    const MOVIMENTO = {
+      sem_leitura: "Sem leitura",
+      abriu: "Abriu",
+      calou: "Calou",
+      falou: "Falou",
+      recusou: "Recusou",
+      continuou: "Continuou a mesma",
+      reabriu: "Reabriu a mesma",
+    };
+
+    let state = LeituraContinua.blank();
+    let anterior = null;
+    let casoAtual = 0;
+    let passoAtual = 0;
+
+    function textoVideo(video) {
+      if (!video) return "Nenhum";
+      const chegada = video.aindaChegando ? "ainda recebe comentários" : "já parou";
+      const colagem = video.cabeNaColagem ? "cabe numa colagem" : "não cabe numa colagem";
+      return video.titulo + " · " + video.deQuem + " · " + chegada + " · " + colagem;
+    }
+
+    function textoTemas(temas) {
+      if (!temas.length) return "Nada ainda.";
+      return temas.map((tema) => tema.nome + " (" + tema.massa + ")").join(", ");
+    }
+
+    function diferencas(antes, agora) {
+      if (!antes) return "Estado inicial.";
+      const linhas = [];
+      if (antes.frase !== agora.frase) linhas.push("A frase mudou.");
+      if (antes.movimento !== agora.movimento) linhas.push("Movimento: " + (MOVIMENTO[agora.movimento] || agora.movimento) + ".");
+      if (antes.leituraAberta !== agora.leituraAberta) {
+        linhas.push(agora.leituraAberta ? "A leitura abriu." : "A leitura não está aberta.");
+      }
+      if (antes.cliente !== agora.cliente) {
+        linhas.push(agora.cliente ? "Passou a ser cliente." : "Não é cliente.");
+      }
+      if (textoTemas(antes.oQueEstaSendoDito) !== textoTemas(agora.oQueEstaSendoDito)) {
+        linhas.push("O que está sendo dito mudou.");
+      }
+      if (antes.vezesQueFalou !== agora.vezesQueFalou) linhas.push("Falou de novo. Total: " + agora.vezesQueFalou + ".");
+      if (antes.vezesQueCalou !== agora.vezesQueCalou) linhas.push("Calou de novo. Total: " + agora.vezesQueCalou + ".");
+      if (antes.roteiro !== agora.roteiro) linhas.push("Roteiro: " + agora.roteiro + ".");
+      if (!linhas.length) linhas.push("Nenhum campo mudou.");
+      return linhas.join(" ");
+    }
+
+    function campo(rotulo, valor) {
+      return '<div class="field"><span class="k">' + rotulo + '</span><span class="v">' + valor + "</span></div>";
+    }
+
+    function desenharEstado() {
+      const temas = state.oQueEstaSendoDito
+        .map((tema) => "<li><span>" + tema.nome + " · " + tema.trecho + "</span><span>" + tema.massa + "</span></li>")
+        .join("");
+      const tituloTemas = state.leituraAberta ? "O que está sendo dito" : "O que esta foto mostra";
+      document.getElementById("estado").innerHTML =
+        '<p class="frase">' + state.frase + "</p>" +
+        '<div class="grid">' +
+        campo("Movimento", MOVIMENTO[state.movimento] || state.movimento) +
+        campo("Vídeo", textoVideo(state.video)) +
+        campo("Leitura aberta", state.leituraAberta ? "Sim" : "Não") +
+        campo("Dá para cobrar", state.cliente ? "Sim" : "Não") +
+        campo("Por quê", state.motivoCliente) +
+        campo("Vezes que falou", String(state.vezesQueFalou)) +
+        campo("Vezes que calou", String(state.vezesQueCalou)) +
+        campo("Comentários novos desde a última fala", String(state.comentariosNovosDesdeAUltimaFala)) +
+        campo("Roteiro", state.roteiro === "recusado" ? "Recusado" : "Fora do serviço") +
+        campo("Última mudança dita", state.mudanca || "Nenhuma") +
+        "</div>" +
+        "<p class=\"k\" style=\"margin-top:16px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#5c564c\">" +
+        tituloTemas +
+        "</p>" +
+        '<ul class="temas">' +
+        (temas || "<li><span>Nada listado.</span><span></span></li>") +
+        "</ul>" +
+        '<div class="mudou">' +
+        diferencas(anterior, state) +
+        "</div>";
+    }
+
+    function despachar(action) {
+      anterior = state;
+      state = LeituraContinua.reduce(state, action);
+      desenharEstado();
+      desenharCaso();
+    }
+
+    function desenharLivre() {
+      const caixa = document.getElementById("livre");
+      caixa.innerHTML = "";
+      LIVRE.forEach((botao) => {
+        const el = document.createElement("button");
+        el.type = "button";
+        el.textContent = botao.rotulo;
+        el.addEventListener("click", () => despachar(botao.action));
+        caixa.appendChild(el);
+      });
+    }
+
+    function desenharAbas() {
+      const caixa = document.getElementById("abas");
+      caixa.innerHTML = "";
+      CASOS.forEach((caso, indice) => {
+        const el = document.createElement("button");
+        el.type = "button";
+        el.textContent = caso.titulo;
+        if (indice === casoAtual) el.className = "on";
+        el.addEventListener("click", () => {
+          casoAtual = indice;
+          passoAtual = 0;
+          anterior = null;
+          state = LeituraContinua.blank();
+          desenharEstado();
+          desenharAbas();
+          desenharCaso();
+        });
+        caixa.appendChild(el);
+      });
+    }
+
+    function desenharCaso() {
+      const caso = CASOS[casoAtual];
+      const passos = caso.passos
+        .map((passo, indice) => {
+          const classe = indice < passoAtual ? "done" : indice === passoAtual ? "now" : "";
+          const disabled = indice !== passoAtual ? "disabled" : "";
+          return '<button type="button" class="' + classe + '" ' + disabled + " data-passo=\"" + indice + "\">" +
+            (indice + 1) + ". " + passo.rotulo +
+            "</button>";
+        })
+        .join("");
+      const caixa = document.getElementById("caso");
+      caixa.innerHTML = "<p>" + caso.texto + "</p><div class=\"steps\">" + passos + "</div>";
+      caixa.querySelectorAll("button").forEach((el) => {
+        el.addEventListener("click", () => {
+          const indice = Number(el.getAttribute("data-passo"));
+          if (indice !== passoAtual) return;
+          despachar(caso.passos[indice].action);
+          passoAtual += 1;
+          desenharCaso();
+        });
+      });
+    }
+
+    desenharLivre();
+    desenharAbas();
+    desenharEstado();
+    desenharCaso();
+  </script>
+</body>
+</html>
